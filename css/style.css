@@ -464,14 +464,25 @@ img {
 }
 
 .hero-content h1 {
-    font-size: 5.5rem;
-    line-height: 1;
+    font-size: 6rem;
+    line-height: 0.9;
     font-weight: 900;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
+    letter-spacing: -2px;
     text-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     animation: heroMainReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: 0.2s;
     opacity: 0;
+}
+
+.hero-content h1 span {
+    font-size: 4rem;
+    display: block;
+    color: var(--light);
+    opacity: 0.8;
+    letter-spacing: 15px;
+    margin-top: 5px;
+    font-weight: 300;
 }
 
 @keyframes heroMainReveal {
@@ -489,9 +500,22 @@ img {
 }
 
 .hero-content p {
-    font-size: 1.2rem;
-    margin-bottom: 40px;
+    font-size: 1.4rem;
+    margin-bottom: 30px;
     opacity: 0.9;
+    font-family: 'Cairo', sans-serif;
+    color: #ffffff;
+}
+
+.hero-content h2 {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 800;
+    animation: heroTitleSlide 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
 }
 
 .hero-btns {
