@@ -95,9 +95,13 @@
                 <li><a href="#men-section">المنتجات</a></li>
             </ul>
             <div class="nav-icons">
-                <a href="#" id="theme-toggle"><i class="fas fa-moon"></i></a>
-                <a href="#" id="my-orders-btn" title="طلباتي"><i class="fas fa-box"></i></a>
-                <a href="#" id="admin-login-btn"><i class="fas fa-user-shield"></i></a>
+                <a href="#" id="theme-toggle" title="تغيير المظهر"><i class="fas fa-moon"></i></a>
+                <a href="#" id="my-orders-btn" title="طلباتي" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-box"></i>
+                    <span class="nav-icon-text"
+                        style="font-size: 0.9rem; font-weight: bold; @media(max-width:768px){display:none;}">طلباتي</span>
+                </a>
+                <a href="#" id="admin-login-btn" title="لوحة التحكم"><i class="fas fa-user-shield"></i></a>
                 <a href="#" id="cart-btn" class="cart-icon">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-count">0</span>
@@ -204,6 +208,18 @@
             <h3>سلة التسوق</h3>
             <button id="close-cart"><i class="fas fa-times"></i></button>
         </div>
+
+        <!-- Auth Prompt in Cart -->
+        <div id="cart-auth-box"
+            style="padding: 15px; background: rgba(212, 175, 55, 0.1); border-bottom: 1px solid rgba(212, 175, 55, 0.2); text-align: center; display: none;">
+            <p style="font-size: 0.85rem; margin-bottom: 10px;">سجل دخولك لمتابعة طلبك لاحقاً</p>
+            <button onclick="signInWithGoogle()"
+                style="background: #fff; color: #000; border: none; padding: 6px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 14px;">
+                تسجيل دخول بجوجل
+            </button>
+        </div>
+
         <div class="cart-items" id="cart-items-list">
             <p class="empty-msg">السلة فارغة حالياً</p>
         </div>

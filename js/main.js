@@ -547,14 +547,22 @@ window.closeSuccessModal = () => {
 
 function updateAuthUI() {
     const myOrdersBtn = document.getElementById('my-orders-btn');
+    const cartAuthBox = document.getElementById('cart-auth-box');
     if (!myOrdersBtn) return;
 
     if (currentUser) {
-        myOrdersBtn.innerHTML = '<i class="fas fa-box"></i>';
         myOrdersBtn.title = 'طلباتي';
+        if (cartAuthBox) cartAuthBox.style.display = 'none';
+
+        // Hide "طلباتي" text on mobile if you want, but keep it clear
+        const text = myOrdersBtn.querySelector('.nav-icon-text');
+        if (text) text.innerText = 'طلباتي';
     } else {
-        myOrdersBtn.innerHTML = '<i class="fas fa-box"></i>';
-        myOrdersBtn.title = 'طلباتي - تسجيل الدخول';
+        myOrdersBtn.title = 'تسجيل الدخول / طلباتي';
+        if (cartAuthBox) cartAuthBox.style.display = 'block';
+
+        const text = myOrdersBtn.querySelector('.nav-icon-text');
+        if (text) text.innerText = 'دخول';
     }
 }
 
@@ -568,64 +576,71 @@ function setupOrdersEventListeners() {
     if (myOrdersBtn) {
         myOrdersBtn.onclick = (e) => {
             e.preventDefault();
-            openMyOrdersModal();
+            window.openMyOrdersModal();
         };
     }
 
     if (closeOrdersModal) {
-        closeOrdersModal.onclick = () => myOrdersModal.classList.remove('active');
+        closeOrdersModal.onclick = () => {
+            if (myOrdersModal) myOrdersModal.classList.remove('active');
+        };
     }
 
     if (googleLoginBtn) {
-        googleLoginBtn.onclick = signInWithGoogle;
+        googleLoginBtn.onclick = window.signInWithGoogle;
     }
 
     if (logoutBtn) {
-        logoutBtn.onclick = signOutUser;
+        logoutBtn.onclick = window.signOutUser;
     }
 }
 
-function openMyOrdersModal() {
+window.openMyOrdersModal = () => {
     const modal = document.getElementById('my-orders-modal');
     const loginSection = document.getElementById('orders-login-section');
     const ordersSection = document.getElementById('orders-list-section');
+    if (!modal) return;
 
     if (currentUser) {
-        loginSection.style.display = 'none';
-        ordersSection.style.display = 'block';
-        document.getElementById('user-email-display').innerText = currentUser.email;
+        if (loginSection) loginSection.style.display = 'none';
+        if (ordersSection) ordersSection.style.display = 'block';
+        const emailDisplay = document.getElementById('user-email-display');
+        if (emailDisplay) emailDisplay.innerText = currentUser.email;
         loadMyOrders();
     } else {
-        loginSection.style.display = 'block';
-        ordersSection.style.display = 'none';
+        if (loginSection) loginSection.style.display = 'block';
+        if (ordersSection) ordersSection.style.display = 'none';
     }
 
     modal.classList.add('active');
-}
+};
 
-async function signInWithGoogle() {
+window.signInWithGoogle = async () => {
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
         await firebase.auth().signInWithPopup(provider);
         showToast("تم تسجيل الدخول بنجاح ✅");
-        openMyOrdersModal();
+        if (typeof window.openMyOrdersModal === 'function') {
+            window.openMyOrdersModal();
+        }
     } catch (error) {
         console.error("Google Sign-in Error:", error);
         if (error.code !== 'auth/popup-closed-by-user') {
             alert("حدث خطأ أثناء تسجيل الدخول: " + error.message);
         }
     }
-}
+};
 
-async function signOutUser() {
+window.signOutUser = async () => {
     try {
         await firebase.auth().signOut();
         showToast("تم تسجيل الخروج");
-        document.getElementById('my-orders-modal').classList.remove('active');
+        const modal = document.getElementById('my-orders-modal');
+        if (modal) modal.classList.remove('active');
     } catch (error) {
         console.error("Sign-out Error:", error);
     }
-}
+};
 
 async function loadMyOrders() {
     const ordersList = document.getElementById('my-orders-list');
@@ -634,31 +649,49 @@ async function loadMyOrders() {
     ordersList.innerHTML = '<div style="text-align: center; padding: 30px; opacity: 0.5;">جاري تحميل الطلبات...</div>';
 
     try {
-        const snapshot = await db.collection('orders')
+        // Try fetching by userId first, then by userEmail as fallback
+        let snapshot = await db.collection('orders')
             .where('userId', '==', currentUser.uid)
-            .orderBy('createdAt', 'desc')
             .get();
 
-        if (snapshot.empty) {
+        // If no results, try by email
+        if (snapshot.empty && currentUser.email) {
+            snapshot = await db.collection('orders')
+                .where('userEmail', '==', currentUser.email)
+                .get();
+        }
+
+        // Sort results manually (newest first)
+        let orders = [];
+        snapshot.forEach(doc => {
+            orders.push({ id: doc.id, ...doc.data() });
+        });
+        orders.sort((a, b) => {
+            const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+            const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+            return dateB - dateA;
+        });
+
+        if (orders.length === 0) {
             ordersList.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 15px;"></i>
-                    <p style="opacity: 0.6;">لا توجد طلبات سابقة</p>
+                    <p style="opacity: 0.6;">لا توجد طلبات مسجلة لهذا الحساب</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.5;">(${currentUser.email})</p>
+                    <p style="font-size: 0.8rem; margin-top: 20px; color: var(--primary);">تنبيه: الطلبات التي تمت بدون تسجيل دخول لا تظهر هنا.</p>
                 </div>`;
             return;
         }
 
         let html = '';
-        snapshot.forEach(doc => {
-            const order = doc.data();
-            const date = order.createdAt ? order.createdAt.toDate().toLocaleDateString('ar-EG') : 'قيد المعالجة';
-            const statusClass = getOrderStatusClass(order.status);
+        orders.forEach(order => {
+            const dateStr = order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toLocaleDateString('ar-EG') : new Date(order.createdAt).toLocaleDateString('ar-EG')) : 'قيد المعالجة';
             const statusColor = getOrderStatusColor(order.status);
 
             html += `
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-size: 0.85rem; opacity: 0.7;"><i class="fas fa-calendar"></i> ${date}</span>
+                        <span style="font-size: 0.85rem; opacity: 0.7;"><i class="fas fa-calendar"></i> ${dateStr}</span>
                         <span style="background: ${statusColor}; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">${order.status}</span>
                     </div>
                     <div style="font-size: 0.9rem; margin-bottom: 10px;">
