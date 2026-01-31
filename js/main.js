@@ -546,23 +546,15 @@ window.closeSuccessModal = () => {
 // ========== CUSTOMER AUTH & ORDERS TRACKING ==========
 
 function updateAuthUI() {
-    const myOrdersBtn = document.getElementById('my-orders-btn');
+    const authText = document.getElementById('auth-text');
     const cartAuthBox = document.getElementById('cart-auth-box');
-    if (!myOrdersBtn) return;
 
     if (currentUser) {
-        myOrdersBtn.title = 'طلباتي';
+        if (authText) authText.innerText = 'طلباتي';
         if (cartAuthBox) cartAuthBox.style.display = 'none';
-
-        // Hide "طلباتي" text on mobile if you want, but keep it clear
-        const text = myOrdersBtn.querySelector('.nav-icon-text');
-        if (text) text.innerText = 'طلباتي';
     } else {
-        myOrdersBtn.title = 'تسجيل الدخول / طلباتي';
+        if (authText) authText.innerText = 'دخول';
         if (cartAuthBox) cartAuthBox.style.display = 'block';
-
-        const text = myOrdersBtn.querySelector('.nav-icon-text');
-        if (text) text.innerText = 'دخول';
     }
 }
 

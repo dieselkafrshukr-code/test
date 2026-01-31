@@ -332,6 +332,41 @@ img {
     transform: translateY(-2px);
 }
 
+.nav-login-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 15px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.nav-login-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(226, 6, 19, 0.3);
+}
+
+.nav-login-btn i {
+    font-size: 1.1rem;
+}
+
+@media (max-width: 480px) {
+    .nav-login-btn span {
+        display: none;
+    }
+
+    .nav-login-btn {
+        padding: 8px;
+    }
+}
+
 .cart-count {
     position: absolute;
     top: -8px;
@@ -1514,7 +1549,7 @@ footer {
     font-size: 0.9rem;
 }
 
-.order-form input, 
+.order-form input,
 .order-form textarea {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1526,7 +1561,7 @@ footer {
     transition: var(--transition);
 }
 
-.order-form input:focus, 
+.order-form input:focus,
 .order-form textarea:focus {
     outline: none;
     border-color: var(--primary);

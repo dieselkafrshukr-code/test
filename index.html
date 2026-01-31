@@ -96,16 +96,21 @@
             </ul>
             <div class="nav-icons">
                 <a href="#" id="theme-toggle" title="تغيير المظهر"><i class="fas fa-moon"></i></a>
-                <a href="#" id="my-orders-btn" title="طلباتي" style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-box"></i>
-                    <span class="nav-icon-text"
-                        style="font-size: 0.9rem; font-weight: bold; @media(max-width:768px){display:none;}">طلباتي</span>
+
+                <!-- Login/Orders Button -->
+                <a href="#" id="my-orders-btn" class="nav-login-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="auth-text">دخول</span>
                 </a>
-                <a href="#" id="admin-login-btn" title="لوحة التحكم"><i class="fas fa-user-shield"></i></a>
+
                 <a href="#" id="cart-btn" class="cart-icon">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-count">0</span>
                 </a>
+
+                <a href="#" id="admin-login-btn" title="لوحة التحكم" style="opacity: 0.5; font-size: 1rem;"><i
+                        class="fas fa-user-shield"></i></a>
+
                 <div class="mobile-menu-btn">
                     <span></span>
                     <span></span>
