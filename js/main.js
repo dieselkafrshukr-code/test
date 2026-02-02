@@ -1,5 +1,14 @@
 // 🚀 DIESEL SHOP - INVINCIBLE ENGINE
-let cart = JSON.parse(localStorage.getItem('diesel_cart') || '[]');
+let cart = [];
+try {
+    const saved = localStorage.getItem('diesel_cart');
+    if (saved) cart = JSON.parse(saved);
+    console.log("📦 Initial cart loaded from localStorage:", cart);
+} catch (e) {
+    console.error("❌ Error parsing cart from localStorage:", e);
+    cart = [];
+}
+
 let selectedProductForSize = null;
 let selectedColor = null;
 let activeCategory = "men";
@@ -100,122 +109,57 @@ const parentSubMap = {
 
 function setupEventListeners() {
     // Nav & Section Anchors
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.onclick = (e) => {
-            const href = anchor.getAttribute('href');
-            if (href === '#men-section' || href === '#home') {
-                closeMobileMenu();
+    const anchors = document.querySelectorAll('a[href^="#"]');
+    anchors.forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            const target = document.querySelector(targetId);
+            if (target) {
+                const navHeight = navbar.offsetHeight;
+                window.scrollTo({
+                    top: target.offsetTop - navHeight,
+                    behavior: 'smooth'
+                });
             }
-        };
+        });
     });
 
-    // Hierarchical Filter Tabs
-    document.querySelectorAll('.main-filter-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const parent = btn.dataset.parent;
-            document.querySelectorAll('.main-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            renderSubFilters(parent);
-            filterAndRender('men', parent, 'all');
-        };
-    });
-
-    // UI Toggles
-    if (cartBtn) cartBtn.onclick = (e) => { e.preventDefault(); openCartSidebar(); };
+    // Cart Sidebar
+    if (cartBtn) cartBtn.onclick = openCartSidebar;
     if (closeCart) closeCart.onclick = closeCartSidebar;
     if (cartOverlay) cartOverlay.onclick = closeCartSidebar;
 
+    // Size Modal Close
+    if (closeModal) {
+        closeModal.onclick = () => sizeModal.classList.remove('active');
+    }
+    window.onclick = (e) => {
+        if (e.target === sizeModal) sizeModal.classList.remove('active');
+        if (e.target === document.getElementById('checkout-modal')) {
+            document.getElementById('checkout-modal').classList.remove('active');
+        }
+        if (e.target === document.getElementById('my-orders-modal')) {
+            document.getElementById('my-orders-modal').classList.remove('active');
+        }
+    };
+
+    // Mobile Menu
     if (mobileMenuBtn) {
-        mobileMenuBtn.onclick = (e) => {
-            e.stopPropagation();
-            mobileMenuBtn.classList.toggle('active');
+        mobileMenuBtn.onclick = () => {
             navLinks.classList.toggle('active');
         };
     }
 
+    // Theme Toggle
     if (themeToggle) {
-        themeToggle.onclick = (e) => {
-            e.preventDefault();
-            toggleTheme();
-        };
+        themeToggle.onclick = toggleTheme;
     }
 
-    const adminBtn = document.getElementById('admin-login-btn');
-    if (adminBtn) {
-        adminBtn.onclick = (e) => {
-            e.preventDefault();
-            const pass = prompt("الرجاء إدخال كلمة مرور المدير:");
-            if (pass === "admin123") { // يمكنك تغيير كلمة المرور هنا
-                window.location.href = "admin.html";
-            } else if (pass !== null) {
-                alert("كلمة المرور غير صحيحة! ❌");
-            }
-        };
-    }
-
-    if (closeModal) closeModal.onclick = () => sizeModal.classList.remove('active');
-
-    // DYNAMIC SIZE SELECTION (FIXED)
-    const sizeOptionsContainer = document.querySelector('.size-options');
-    if (sizeOptionsContainer) {
-        sizeOptionsContainer.onclick = (e) => {
-            const btn = e.target.closest('.size-btn');
-            if (btn && selectedProductForSize) {
-                confirmAddToCart(selectedProductForSize, btn.innerText);
-                sizeModal.classList.remove('active');
-                showToast("تمت الإضافة للسلة بنجاح ✅");
-            }
-        };
-    }
-
-    // DYNAMIC COLOR SELECTION
-    const colorOptionsContainer = document.getElementById('modal-color-options');
-    if (colorOptionsContainer) {
-        colorOptionsContainer.onclick = (e) => {
-            const btn = e.target.closest('.color-btn');
-            if (btn) {
-                colorOptionsContainer.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedColor = btn.innerText;
-
-                // Update modal image if color has a specific image
-                if (selectedProductForSize && selectedProductForSize.colorVariants) {
-                    const variant = selectedProductForSize.colorVariants.find(v => v.name === selectedColor);
-                    if (variant) {
-                        if (variant.image) document.getElementById('modal-img').src = variant.image;
-                        else document.getElementById('modal-img').src = selectedProductForSize.image;
-
-                        // UPDATE SIZES for this color
-                        const sizeContainer = document.querySelector('.size-options');
-                        const variantSizes = (variant.sizes && variant.sizes.length > 0) ? variant.sizes : (selectedProductForSize.sizes || []);
-                        sizeContainer.innerHTML = variantSizes.map(s => `<button class="size-btn">${s}</button>`).join('');
-                    }
-                }
-            }
-        };
-    }
-
-    // Checkout Button
-    const checkoutBtn = document.querySelector('.checkout-btn');
-    const checkoutModal = document.getElementById('checkout-modal');
-    const closeCheckout = document.getElementById('close-checkout');
+    // Checkout Form Submission
     const orderForm = document.getElementById('order-form');
-    const formTotalPrice = document.getElementById('form-total-price');
-
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
-            if (cart.length === 0) return;
-            const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-            formTotalPrice.innerText = `${total} جنيه`;
-            checkoutModal.classList.add('active');
-            closeCartSidebar();
-        });
-    }
-
-    if (closeCheckout) {
-        closeCheckout.onclick = () => checkoutModal.classList.remove('active');
-    }
+    const checkoutModal = document.getElementById('checkout-modal');
 
     if (orderForm) {
         orderForm.onsubmit = async (e) => {
@@ -271,32 +215,112 @@ function setupEventListeners() {
             }
         };
     }
+
+    // Categories Sub-Filters
+    const mainCategoryButtons = document.querySelectorAll('.filter-btn');
+    mainCategoryButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            mainCategoryButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCategory = btn.getAttribute('data-category');
+            renderSubFilters(activeCategory);
+            renderAll();
+        });
+    });
+
+    // My Orders Modal Initial Setup
+    setupOrdersEventListeners();
 }
 
-function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.style = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--primary); color:#fff; padding:12px 30px; border-radius:50px; z-index:9999; font-weight:bold; box-shadow:0 10px 30px rgba(0,0,0,0.5); animation: fadeInUp 0.3s ease;";
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 500);
-    }, 2000);
+function renderSubFilters(category) {
+    if (!subFiltersContainer) return;
+    const subs = parentSubMap[category] || [];
+
+    if (subs.length > 0) {
+        subFiltersContainer.style.display = 'flex';
+        subFiltersContainer.innerHTML = '<button class="sub-filter-btn active" data-sub="all">الكل</button>' +
+            subs.map(s => `<button class="sub-filter-btn" data-sub="${s.id}">${s.label}</button>`).join('');
+
+        const subBtns = subFiltersContainer.querySelectorAll('.sub-filter-btn');
+        subBtns.forEach(b => {
+            b.onclick = () => {
+                subBtns.forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                renderAll(b.getAttribute('data-sub'));
+            };
+        });
+    } else {
+        subFiltersContainer.style.display = 'none';
+        subFiltersContainer.innerHTML = '';
+    }
 }
 
-// Global scope functions
-window.openSizeModal = (id) => {
-    const p = remoteProducts.find(prod => prod.id === id);
+async function fetchProducts() {
+    if (typeof db === 'undefined') {
+        console.warn("Firestore not available, using products.js");
+        return products;
+    }
+    try {
+        const snapshot = await db.collection('products').get();
+        remoteProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return remoteProducts;
+    } catch (error) {
+        console.error("Error fetching products from Firebase:", error);
+        return products;
+    }
+}
+
+async function renderAll(subFilter = 'all') {
+    if (!menContainer) return;
+
+    // Show skeletons or clear
+    menContainer.innerHTML = Array(4).fill(0).map(() => '<div class="product-skeleton"></div>').join('');
+
+    const allData = await fetchProducts();
+    let filtered = allData.filter(p => p.parentCategory === activeCategory);
+
+    if (subFilter !== 'all') {
+        filtered = filtered.filter(p => p.subCategory === subFilter);
+    }
+
+    if (filtered.length === 0) {
+        menContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.5;">قريباً...</div>';
+        return;
+    }
+
+    menContainer.innerHTML = filtered.map(p => `
+        <div class="product-card" data-aos="fade-up">
+            ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
+            <div class="product-image">
+                <img src="${p.image}" alt="${p.name}" loading="lazy">
+                <div class="product-actions" onclick="openSizeModal('${p.id}')">
+                    <button class="btn-add">إضافة للسلة</button>
+                </div>
+            </div>
+            <div class="product-info">
+                <h3>${p.name}</h3>
+                <div class="price-container">
+                    <span class="price">${p.price} جنيه</span>
+                    ${p.oldPrice ? `<span class="old-price">${p.oldPrice} جنيه</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.openSizeModal = async (id) => {
+    const p = (remoteProducts.length > 0 ? remoteProducts : products).find(x => x.id === id);
     if (!p) return;
     selectedProductForSize = p;
-    selectedColor = (p.colors && p.colors.length > 0) ? p.colors[0] : null; // Default to first color
 
     modalProductName.innerText = p.name;
     modalProductPrice.innerText = `${p.price} جنيه`;
-    document.getElementById('modal-img').src = p.image;
+
+    const img = document.getElementById('modal-img');
+    img.src = p.image;
 
     // Render Colors
-    const colorContainer = document.getElementById('modal-color-options');
+    const colorContainer = document.querySelector('.color-options');
     if (colorContainer) {
         const colors = (p.colorVariants && p.colorVariants.length > 0)
             ? p.colorVariants.map(v => v.name)
@@ -306,23 +330,82 @@ window.openSizeModal = (id) => {
             `<button class="color-btn ${index === 0 ? 'selected' : ''}">${c}</button>`
         ).join('');
 
-        if (p.colorVariants && p.colorVariants[0] && p.colorVariants[0].image) {
-            document.getElementById('modal-img').src = p.colorVariants[0].image;
-        }
+        const colorBtns = colorContainer.querySelectorAll('.color-btn');
+        colorBtns.forEach(btn => {
+            btn.onclick = () => {
+                colorBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                const selectedC = btn.innerText;
+
+                // Update Image if variant exists
+                if (p.colorVariants) {
+                    const variant = p.colorVariants.find(v => v.name === selectedC);
+                    if (variant && variant.image) img.src = variant.image;
+
+                    // Update Sizes for this color
+                    if (variant && variant.sizes && variant.sizes.length > 0) {
+                        const sizeContainer = document.querySelector('.size-options');
+                        sizeContainer.innerHTML = variant.sizes.map(s => `<button class="size-btn">${s}</button>`).join('');
+                        attachSizeEvents();
+                    }
+                }
+            };
+        });
     }
 
-    // Render Sizes (based on first color or global)
+    // Re-render sizes for initial color
     const sizeContainer = document.querySelector('.size-options');
     let initialSizes = p.sizes || [];
     if (p.colorVariants && p.colorVariants.length > 0) {
-        const firstVariant = p.colorVariants[0];
-        if (firstVariant.sizes && firstVariant.sizes.length > 0) {
-            initialSizes = firstVariant.sizes;
-        }
+        if (p.colorVariants[0].sizes) initialSizes = p.colorVariants[0].sizes;
     }
     sizeContainer.innerHTML = initialSizes.map(s => `<button class="size-btn">${s}</button>`).join('');
+    attachSizeEvents();
 
     sizeModal.classList.add('active');
+};
+
+function attachSizeEvents() {
+    const sizeBtns = document.querySelectorAll('.size-btn');
+    sizeBtns.forEach(btn => {
+        btn.onclick = () => {
+            sizeBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        };
+    });
+}
+
+window.addToCartFromModal = () => {
+    const selectedSizeBtn = document.querySelector('.size-btn.selected');
+    const selectedColorBtn = document.querySelector('.color-btn.selected');
+
+    if (!selectedSizeBtn) {
+        showToast("يرجى اختيار المقاس");
+        return;
+    }
+
+    const size = selectedSizeBtn.innerText;
+    const color = selectedColorBtn ? selectedColorBtn.innerText : "أساسي";
+    const p = selectedProductForSize;
+    const cartId = `${p.id}-${size}-${color}`;
+
+    let cartImage = p.image;
+    if (p.colorVariants) {
+        const variant = p.colorVariants.find(v => v.name === color);
+        if (variant && variant.image) cartImage = variant.image;
+    }
+
+    const existing = cart.find(i => i.cartId === cartId);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({ ...p, cartId, size, color, quantity: 1, image: cartImage });
+    }
+
+    updateCartUI();
+    saveCartToFirebase();
+    sizeModal.classList.remove('active');
+    openCartSidebar();
 };
 
 window.removeFromCart = (id) => {
@@ -343,28 +426,6 @@ window.updateCartQuantity = (id, delta) => {
         }
     }
 };
-
-function confirmAddToCart(p, size) {
-    const color = selectedColor || (p.colors ? p.colors[0] : "أساسي");
-    const cartId = `${p.id}-${size}-${color}`;
-
-    // Find variant image for cart
-    let cartImage = p.image;
-    if (p.colorVariants) {
-        const variant = p.colorVariants.find(v => v.name === color);
-        if (variant && variant.image) cartImage = variant.image;
-    }
-
-    const existing = cart.find(i => i.cartId === cartId);
-    if (existing) {
-        existing.quantity++;
-    } else {
-        cart.push({ ...p, cartId, size, color, quantity: 1, image: cartImage });
-    }
-    updateCartUI();
-    saveCartToFirebase();
-    openCartSidebar();
-}
 
 function updateCartUI() {
     const counts = document.querySelectorAll('.cart-count');
@@ -407,130 +468,42 @@ function updateCartUI() {
     }
 }
 
-function renderAll() {
-    if (!menContainer) return;
-    menContainer.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#fff;">جاري تحميل المنتجات...</div>';
-
-    let allProds = [];
-
-    // 1. Get Local Storage Products
-    const localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
-
-    // 2. Get Firebase Products (If configured)
-    if (typeof db !== 'undefined') {
-        db.collection('products').orderBy('createdAt', 'desc').get().then(snapshot => {
-            let fireProds = [];
-            snapshot.forEach(doc => fireProds.push({ id: doc.id, ...doc.data() }));
-
-            combineAndRender(fireProds, localProds);
-        }).catch(err => {
-            combineAndRender([], localProds);
-        });
-    } else {
-        combineAndRender([], localProds);
-    }
+function openCartSidebar() {
+    cartSidebar.classList.add('active');
+    cartOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-function combineAndRender(fireProds, localProds) {
-    // Combine all
-    remoteProducts = [...fireProds, ...localProds];
-
-    // If both empty, use the static products.js (Initial state)
-    if (remoteProducts.length === 0) {
-        remoteProducts = products;
-    }
-
-    // Filter out duplicates (if any) based on name
-    const seen = new Set();
-    remoteProducts = remoteProducts.filter(p => {
-        const duplicate = seen.has(p.name);
-        seen.add(p.name);
-        return !duplicate;
-    });
-
-    filterAndRender('men', 'all', 'all');
+function closeCartSidebar() {
+    cartSidebar.classList.remove('active');
+    cartOverlay.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
-function renderSubFilters(parent) {
-    if (!subFiltersContainer) return;
-
-    const subs = parentSubMap[parent] || [];
-    if (subs.length === 0) {
-        subFiltersContainer.classList.remove('active');
-        subFiltersContainer.innerHTML = "";
+window.openCheckout = () => {
+    if (cart.length === 0) {
+        showToast("السلة فارغة");
         return;
     }
-
-    subFiltersContainer.innerHTML = subs.map(s => `
-        <button class="sub-btn" onclick="applySubFilter('${parent}', '${s.id}', this)">${s.label}</button>
-    `).join('');
-
-    subFiltersContainer.classList.add('active');
-}
-
-window.applySubFilter = (parent, subId, btn) => {
-    subFiltersContainer.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    filterAndRender('men', parent, subId);
+    const checkoutModal = document.getElementById('checkout-modal');
+    closeCartSidebar();
+    checkoutModal.classList.add('active');
 };
 
-function filterAndRender(section, parent, sub) {
-    if (!menContainer) return;
-
-    let filtered = remoteProducts;
-
-    if (parent !== 'all') {
-        if (parent === 'clothes') {
-            const clothesSubs = parentSubMap.clothes.map(s => s.id);
-            filtered = filtered.filter(p => clothesSubs.includes(p.subCategory) || p.subCategory === 'clothes');
-        } else if (parent === 'pants') {
-            const pantsSubs = parentSubMap.pants.map(s => s.id);
-            filtered = filtered.filter(p => pantsSubs.includes(p.subCategory) || p.subCategory === 'pants');
-        } else {
-            filtered = filtered.filter(p => p.subCategory === parent);
-        }
-    }
-
-    if (sub !== 'all') {
-        filtered = filtered.filter(p => p.subCategory === sub);
-    }
-
-    if (filtered.length === 0) {
-        menContainer.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#666;">لا توجد نتائج مطابقة</div>`;
-        return;
-    }
-
-    menContainer.innerHTML = filtered.map(p => `
-        <div class="product-card">
-            <div class="product-img">
-                ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
-                <img src="${p.image}" loading="lazy" alt="${p.name}">
-                <div class="product-actions" onclick="openSizeModal('${p.id}')">
-                    <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
-                </div>
-            </div>
-            <div class="product-info">
-                <span class="product-category-tag">Diesel Men</span>
-                <h3>${p.name}</h3>
-                <div class="price">${p.price}</div>
-            </div>
-        </div>
-    `).join('');
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }
 
-function openCartSidebar() { cartSidebar.classList.add('open'); cartOverlay.classList.add('show'); }
-function closeCartSidebar() { cartSidebar.classList.remove('open'); cartOverlay.classList.remove('show'); }
-function closeMobileMenu() { if (mobileMenuBtn) { mobileMenuBtn.classList.remove('active'); navLinks.classList.remove('active'); } }
-
-
-
-window.onscroll = () => {
-    if (navbar) window.scrollY > 50 ? navbar.classList.add('scrolled') : navbar.classList.remove('scrolled');
-};
-
-// Theme Toggle Logic
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark as requested
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 }
@@ -560,55 +533,70 @@ window.closeSuccessModal = () => {
 // ========== CART FIREBASE SYNC ==========
 
 async function saveCartToFirebase() {
+    console.log("💾 Saving cart...", cart);
     // Save to localStorage always as backup
     localStorage.setItem('diesel_cart', JSON.stringify(cart));
 
-    if (!currentUser || typeof db === 'undefined') return;
+    if (!currentUser || typeof db === 'undefined') {
+        console.log("ℹ️ No user logged in, only local save.");
+        return;
+    }
 
     try {
         await db.collection('user_carts').doc(currentUser.uid).set({
             items: cart,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+        console.log("✅ Cart saved to Firebase for user:", currentUser.uid);
     } catch (error) {
-        console.error("Error saving cart to Firebase:", error);
+        console.error("❌ Error saving cart to Firebase:", error);
     }
 }
 
 async function loadCartFromFirebase() {
     if (!currentUser || typeof db === 'undefined') return;
+    console.log("⏳ Loading cart from Firebase for:", currentUser.uid);
 
     try {
         const doc = await db.collection('user_carts').doc(currentUser.uid).get();
         if (doc.exists) {
             const data = doc.data();
+            console.log("📄 Remote cart found:", data);
             if (data.items) {
-                // IMPORTANT: If we have items in remote, they MUST be combined with local
                 const remoteItems = data.items || [];
                 let merged = [...cart];
+                let changed = false;
 
                 remoteItems.forEach(ri => {
                     const existing = merged.find(li => li.cartId === ri.cartId);
                     if (!existing) {
                         merged.push(ri);
+                        changed = true;
                     } else {
-                        // Use the higher quantity
-                        existing.quantity = Math.max(existing.quantity, ri.quantity);
+                        if (ri.quantity > existing.quantity) {
+                            existing.quantity = ri.quantity;
+                            changed = true;
+                        }
                     }
                 });
 
-                cart = merged;
-                updateCartUI();
-                saveCartToFirebase(); // Save the merged result
+                if (changed) {
+                    console.log("🔄 Merged remote items into local cart.");
+                    cart = merged;
+                    updateCartUI();
+                    saveCartToFirebase();
+                } else {
+                    console.log("✅ Local cart is already up to date.");
+                }
             }
         } else {
-            // First time user login OR no remote cart, save local to remote
+            console.log("📭 No remote cart document found. Current cart will be saved on next action.");
             if (cart.length > 0) {
                 saveCartToFirebase();
             }
         }
     } catch (error) {
-        console.error("Error loading cart from Firebase:", error);
+        console.error("❌ Error loading cart from Firebase:", error);
     }
 }
 
@@ -803,6 +791,3 @@ function getOrderStatusColor(status) {
     };
     return map[status] || '#666';
 }
-
-// Initialize orders event listeners
-document.addEventListener('DOMContentLoaded', setupOrdersEventListeners);
