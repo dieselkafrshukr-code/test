@@ -127,7 +127,12 @@ function setupEventListeners() {
     });
 
     // Cart Sidebar
-    if (cartBtn) cartBtn.onclick = openCartSidebar;
+    if (cartBtn) {
+        cartBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCartSidebar();
+        });
+    }
     if (closeCart) closeCart.onclick = closeCartSidebar;
     if (cartOverlay) cartOverlay.onclick = closeCartSidebar;
 
@@ -135,7 +140,7 @@ function setupEventListeners() {
     if (closeModal) {
         closeModal.onclick = () => sizeModal.classList.remove('active');
     }
-    window.onclick = (e) => {
+    window.addEventListener('click', (e) => {
         if (e.target === sizeModal) sizeModal.classList.remove('active');
         if (e.target === document.getElementById('checkout-modal')) {
             document.getElementById('checkout-modal').classList.remove('active');
@@ -143,7 +148,7 @@ function setupEventListeners() {
         if (e.target === document.getElementById('my-orders-modal')) {
             document.getElementById('my-orders-modal').classList.remove('active');
         }
-    };
+    });
 
     // Mobile Menu
     if (mobileMenuBtn) {
@@ -152,19 +157,24 @@ function setupEventListeners() {
         };
     }
 
-    // Admin Panel Shortcut
+    // Admin Panel Shortcut - FIXED & MORE ROBUST
     const adminBtn = document.getElementById('admin-login-btn');
     if (adminBtn) {
         adminBtn.style.cursor = 'pointer';
-        adminBtn.onclick = (e) => {
+        adminBtn.style.opacity = '1'; // Ensure it's fully visible
+        adminBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log("🚀 Navigating to Admin Panel...");
             window.location.href = 'admin.html';
-        };
+        });
     }
 
     // Theme Toggle
     if (themeToggle) {
-        themeToggle.onclick = toggleTheme;
+        themeToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleTheme();
+        });
     }
 
     // Checkout Form Submission
