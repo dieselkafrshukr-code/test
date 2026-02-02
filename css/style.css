@@ -1215,6 +1215,36 @@ footer {
     .scroll-indicator {
         display: none;
     }
+
+    /* Footer Mobile Fix */
+    .footer-top {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+    }
+
+    .footer-info,
+    .footer-links,
+    .footer-contact {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo.footer-logo {
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .footer-links ul {
+        padding: 0;
+    }
+
+    .footer-contact p {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
 }
 
 @media (max-width: 576px) {
