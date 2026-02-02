@@ -37,6 +37,9 @@ if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
             } else if (adminRole === 'orders') {
                 showTab('orders');
                 loadOrders();
+            } else if (adminRole === 'all') {
+                showTab('products'); // Default for owner
+                loadProducts();
             }
         } else {
             loginOverlay.style.display = 'flex';
@@ -91,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let role = 'none';
                 if (pass === '123456123456') role = 'products';
                 else if (pass === '1234512345') role = 'orders';
+                else if (pass === 'diesel7080') role = 'all'; // OWNER ROLE
                 else {
                     errEl.innerText = "كلمة السر غير صحيحة لصلاحيات الأدمن ❌";
                     errEl.style.display = 'block';
@@ -130,6 +134,9 @@ function applyRoleRestrictions() {
     } else if (adminRole === 'orders') {
         if (tabProducts) tabProducts.style.display = 'none';
         if (tabOrders) tabOrders.style.display = 'flex';
+    } else if (adminRole === 'all') {
+        if (tabProducts) tabProducts.style.display = 'flex';
+        if (tabOrders) tabOrders.style.display = 'flex';
     } else {
         if (tabProducts) tabProducts.style.display = 'none';
         if (tabOrders) tabOrders.style.display = 'none';
@@ -137,7 +144,7 @@ function applyRoleRestrictions() {
 }
 
 function showTab(tab) {
-    if (adminRole !== 'none' && adminRole !== tab) return;
+    if (adminRole !== 'none' && adminRole !== 'all' && adminRole !== tab) return;
 
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tab}`);
