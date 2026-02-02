@@ -20,11 +20,13 @@ if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     productsCol = db.collection('products');
     isFirebaseReady = true;
 
-    // Force sign out on every page visit to admin to ensure no persistent login
-    // This is the "Nuclear" option to satisfy the "Ask every time" requirement
+    // IMMEDIATE NUCLEAR SIGNOUT - No session survives this page load
     if (!localStorage.getItem('admin_logging_in')) {
-        firebase.auth().signOut();
-        localStorage.removeItem('adminRole');
+        firebase.auth().signOut().then(() => {
+            console.log("🔒 Security: All sessions cleared.");
+            localStorage.clear(); // Clear EVERYTHING to be 100% sure
+            sessionStorage.clear();
+        });
         adminRole = 'none';
     }
 
