@@ -11,6 +11,7 @@ const firebaseConfig = {
 let db = null;
 let productsCol = null;
 let isFirebaseReady = false;
+let adminRole = localStorage.getItem('adminRole') || 'none'; // 'products' or 'orders'
 
 // Initialize Firebase if keys are provided
 if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -27,8 +28,20 @@ if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
         if (user) {
             loginOverlay.style.display = 'none';
             adminContent.style.display = 'block';
-            loadProducts();
-            loadOrders();
+
+            // Apply Role Restrictions
+            applyRoleRestrictions();
+
+            if (adminRole === 'products') {
+                showTab('products');
+                loadProducts();
+            } else if (adminRole === 'orders') {
+                showTab('orders');
+                loadOrders();
+            } else {
+                // If no role set (e.g. session expired), logout
+                logout();
+            }
         } else {
             loginOverlay.style.display = 'flex';
             adminContent.style.display = 'none';
@@ -78,8 +91,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const pass = document.getElementById('login-password').value;
             const errEl = document.getElementById('login-error');
 
+            // Determine Role based on password
+            if (pass === 'admin123') {
+                adminRole = 'products';
+            } else if (pass === 'admin1234') {
+                adminRole = 'orders';
+            } else {
+                errEl.innerText = "كلمة مرور غير صحيحة لصلاحيات الأدمن";
+                errEl.style.display = 'block';
+                return;
+            }
+
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, pass);
+                localStorage.setItem('adminRole', adminRole);
             } catch (err) {
                 errEl.innerText = "خطأ في تسجيل الدخول: " + err.message;
                 errEl.style.display = 'block';
@@ -94,9 +119,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function logout() {
     firebase.auth().signOut();
+    localStorage.removeItem('adminRole');
+    adminRole = 'none';
+}
+
+function applyRoleRestrictions() {
+    const tabProducts = document.getElementById('tab-products');
+    const tabOrders = document.getElementById('tab-orders');
+
+    if (adminRole === 'products') {
+        if (tabProducts) tabProducts.style.display = 'flex';
+        if (tabOrders) tabOrders.style.display = 'none';
+    } else if (adminRole === 'orders') {
+        if (tabProducts) tabProducts.style.display = 'none';
+        if (tabOrders) tabOrders.style.display = 'flex';
+    }
 }
 
 function showTab(tab) {
+    if (adminRole !== 'none' && adminRole !== tab) return;
+
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-${tab}`).classList.add('active');
 
