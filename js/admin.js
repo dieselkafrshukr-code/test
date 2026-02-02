@@ -143,7 +143,12 @@ function applyRoleRestrictions() {
 }
 
 function showTab(tab) {
-    if (adminRole !== 'none' && adminRole !== 'all' && adminRole !== tab) return;
+    // Strict Role Check
+    if (adminRole === 'none') return;
+    if (adminRole !== 'all' && adminRole !== tab) {
+        console.warn("🚫 Access Denied to Tab:", tab);
+        return;
+    }
 
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tab}`);
@@ -152,7 +157,7 @@ function showTab(tab) {
     if (tab === 'products') {
         document.getElementById('products-section').style.display = 'block';
         document.getElementById('orders-section').style.display = 'none';
-    } else {
+    } else if (tab === 'orders') {
         document.getElementById('products-section').style.display = 'none';
         document.getElementById('orders-section').style.display = 'block';
         loadOrders();
@@ -319,6 +324,7 @@ if (saveProductForm) {
 }
 
 async function loadProducts() {
+    if (adminRole !== 'all' && adminRole !== 'products') return;
     try {
         let allProducts = [];
         if (isFirebaseReady) {
@@ -410,6 +416,7 @@ function showLoader(show) { if (globalLoader) globalLoader.style.display = show 
 // Order functions
 async function loadOrders() {
     if (!isFirebaseReady) return;
+    if (adminRole !== 'all' && adminRole !== 'orders') return;
     const ordersList = document.getElementById('orders-list');
     db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         let html = ''; let newCount = 0;
