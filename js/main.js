@@ -279,18 +279,38 @@ function renderSubFilters(category) {
 }
 
 async function fetchProducts() {
-    if (typeof db === 'undefined') {
-        console.warn("Firestore not available, using products.js");
-        return products;
-    }
+    let allP = [];
+
+    // 1. Load Local Products (Backup/Manual)
     try {
-        const snapshot = await db.collection('products').get();
-        remoteProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return remoteProducts;
-    } catch (error) {
-        console.error("Error fetching products from Firebase:", error);
-        return products;
+        const local = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+        allP = [...local];
+    } catch (e) { console.error("Local load error", e); }
+
+    // 2. Load Firebase Products (Live)
+    if (typeof db !== 'undefined') {
+        try {
+            const snapshot = await db.collection('products').get();
+            const remote = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Merge: Remote products overwrite local if IDs match, otherwise add
+            remote.forEach(rp => {
+                const idx = allP.findIndex(lp => lp.id === rp.id);
+                if (idx !== -1) allP[idx] = rp;
+                else allP.push(rp);
+            });
+        } catch (error) {
+            console.error("Firebase fetch error:", error);
+        }
     }
+
+    // 3. Fallback to hardcoded products if everything is empty
+    if (allP.length === 0 && typeof products !== 'undefined') {
+        allP = products;
+    }
+
+    remoteProducts = allP;
+    return allP;
 }
 
 async function renderAll(subFilter = 'all') {

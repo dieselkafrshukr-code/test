@@ -334,6 +334,41 @@ if (saveProductForm) {
     };
 }
 
+async function fetchProducts() {
+    let allP = [];
+
+    // 1. Load Local Products (Backup/Manual)
+    try {
+        const local = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+        allP = [...local];
+    } catch (e) { console.error("Local load error", e); }
+
+    // 2. Load Firebase Products (Live)
+    if (typeof db !== 'undefined') {
+        try {
+            const snapshot = await db.collection('products').get();
+            const remote = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Merge: Remote products overwrite local if IDs match, otherwise add
+            remote.forEach(rp => {
+                const idx = allP.findIndex(lp => lp.id === rp.id);
+                if (idx !== -1) allP[idx] = rp;
+                else allP.push(rp);
+            });
+        } catch (error) {
+            console.error("Firebase fetch error:", error);
+        }
+    }
+
+    // 3. Fallback to hardcoded products if everything is empty
+    if (allP.length === 0 && typeof products !== 'undefined') {
+        allP = products;
+    }
+
+    remoteProducts = allP;
+    return allP;
+}
+
 async function loadProducts() {
     // Safety check for UI elements
     if (!productsListBody) productsListBody = document.getElementById('products-list-body');
@@ -341,15 +376,11 @@ async function loadProducts() {
 
     if (adminRole !== 'all' && adminRole !== 'products') return;
     try {
-        let allProducts = [];
-        if (isFirebaseReady) {
-            const snapshot = await productsCol.get();
-            snapshot.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
-            allProducts.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-        }
-        const localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
-        allProducts = [...allProducts, ...localProds];
+        let allProducts = await fetchProducts(); // Use the new fetchProducts function
+
+        // Ensure unique products after merging
         const uniqueProds = Array.from(new Map(allProducts.map(item => [item.id, item])).values());
+        uniqueProds.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
         let html = '';
         let cats = { clothes: 0, shoes: 0, pants: 0 };
