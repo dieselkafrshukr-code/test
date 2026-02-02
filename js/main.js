@@ -3,9 +3,7 @@ let cart = [];
 try {
     const saved = localStorage.getItem('diesel_cart');
     if (saved) cart = JSON.parse(saved);
-    console.log("📦 Initial cart loaded from localStorage:", cart);
 } catch (e) {
-    console.error("❌ Error parsing cart from localStorage:", e);
     cart = [];
 }
 
@@ -14,7 +12,7 @@ let selectedColor = null;
 let activeCategory = "all";
 let remoteProducts = []; // To store products from Firebase
 
-// Firebase Config (Must match admin.js)
+// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyBFRqe3lhvzG0FoN0uAJlAP-VEz9bKLjUc",
     authDomain: "mre23-4644a.firebaseapp.com",
@@ -24,19 +22,17 @@ const firebaseConfig = {
     appId: "1:179268769077:web:d9fb8cd25ad284ae0de87c"
 };
 
-// Initialize Firebase if config is provided
+// Initialize Firebase
 let currentUser = null;
 if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
 
-    // Auth State Listener
+    // Auth State Listener for Customers
     firebase.auth().onAuthStateChanged(user => {
         currentUser = user;
-        if (window.initialized) {
-            updateAuthUI();
-            if (user) loadCartFromFirebase();
-        }
+        updateAuthUI();
+        if (user) loadCartFromFirebase();
     });
 }
 
@@ -50,23 +46,18 @@ const initAll = () => {
     initElements();
     initTheme();
     setupEventListeners();
-    updateAuthUI(); // Update UI if auth triggered before init
-    updateCartUI(); // Initial UI sync
-    if (currentUser) loadCartFromFirebase(); // Sync if logged in
+    updateCartUI();
     renderAll();
 
-    // Auto-hide loader (Slowed down for more premium feel)
     if (loader) {
         setTimeout(() => {
             loader.style.opacity = '0';
             setTimeout(() => loader.style.display = 'none', 800);
-        }, 2500);
+        }, 2200);
     }
 };
 
 document.addEventListener('DOMContentLoaded', initAll);
-
-// Backup: If script loads after DOM is already ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     initAll();
 }
@@ -108,86 +99,55 @@ const parentSubMap = {
 };
 
 function setupEventListeners() {
-    // Nav & Section Anchors
-    const anchors = document.querySelectorAll('a[href^="#"]');
-    anchors.forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            const target = document.querySelector(targetId);
-            if (target) {
-                const navHeight = navbar.offsetHeight;
-                window.scrollTo({
-                    top: target.offsetTop - navHeight,
-                    behavior: 'smooth'
-                });
-            }
-        });
+    // Nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.onclick = () => closeMobileMenu();
     });
 
-    // Cart Sidebar
-    if (cartBtn) {
-        cartBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            openCartSidebar();
-        });
-    }
+    // Main Filters
+    document.querySelectorAll('.main-filter-btn').forEach(btn => {
+        btn.onclick = () => {
+            const parent = btn.dataset.parent;
+            document.querySelectorAll('.main-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCategory = parent;
+            renderSubFilters(parent);
+            filterAndRender('men', parent, 'all');
+        };
+    });
+
+    if (cartBtn) cartBtn.onclick = (e) => { e.preventDefault(); openCartSidebar(); };
     if (closeCart) closeCart.onclick = closeCartSidebar;
     if (cartOverlay) cartOverlay.onclick = closeCartSidebar;
 
-    // Size Modal Close
-    if (closeModal) {
-        closeModal.onclick = () => sizeModal.classList.remove('active');
-    }
-    window.addEventListener('click', (e) => {
-        if (e.target === sizeModal) sizeModal.classList.remove('active');
-        if (e.target === document.getElementById('checkout-modal')) {
-            document.getElementById('checkout-modal').classList.remove('active');
-        }
-        if (e.target === document.getElementById('my-orders-modal')) {
-            document.getElementById('my-orders-modal').classList.remove('active');
-        }
-    });
-
-    // Mobile Menu
     if (mobileMenuBtn) {
-        mobileMenuBtn.onclick = () => {
+        mobileMenuBtn.onclick = (e) => {
+            e.stopPropagation();
+            mobileMenuBtn.classList.toggle('active');
             navLinks.classList.toggle('active');
         };
     }
 
-    // Admin Panel Shortcut - FIXED & MORE ROBUST
+    if (themeToggle) themeToggle.onclick = (e) => { e.preventDefault(); toggleTheme(); };
+
+    // Admin Panel Link
     const adminBtn = document.getElementById('admin-login-btn');
     if (adminBtn) {
-        adminBtn.style.cursor = 'pointer';
-        adminBtn.style.opacity = '1'; // Ensure it's fully visible
-        adminBtn.addEventListener('click', (e) => {
+        adminBtn.onclick = (e) => {
             e.preventDefault();
-            console.log("🚀 Navigating to Admin Panel...");
             sessionStorage.setItem('force_admin_login', 'true');
-            window.location.href = 'admin.html';
-        });
+            window.location.href = "admin.html";
+        };
     }
 
-    // Theme Toggle
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleTheme();
-        });
-    }
+    if (closeModal) closeModal.onclick = () => sizeModal.classList.remove('active');
 
-    // Checkout Form Submission
+    // Checkout Form
     const orderForm = document.getElementById('order-form');
-    const checkoutModal = document.getElementById('checkout-modal');
-
     if (orderForm) {
         orderForm.onsubmit = async (e) => {
             e.preventDefault();
             const submitBtn = orderForm.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerText;
-
             submitBtn.disabled = true;
             submitBtn.innerText = "جاري تأكيد الطلب...";
 
@@ -212,242 +172,199 @@ function setupEventListeners() {
             };
 
             try {
-                if (typeof db !== 'undefined') {
-                    await db.collection('orders').add(orderData);
-
-                    // Clear cart
-                    cart = [];
-                    updateCartUI();
-                    saveCartToFirebase();
-
-                    // Show success
-                    checkoutModal.classList.remove('active');
-                    document.getElementById('success-modal').classList.add('active');
-                    orderForm.reset();
-                } else {
-                    alert("حدث خطأ في الاتصال بقاعدة البيانات. برجاء المحاولة لاحقاً.");
-                }
-            } catch (error) {
-                console.error("Error adding order: ", error);
-                alert("حدث خطأ أثناء إرسال الطلب. برجاء المحاولة مرة أخرى.");
+                await db.collection('orders').add(orderData);
+                cart = [];
+                updateCartUI();
+                saveCartToFirebase();
+                document.getElementById('checkout-modal').classList.remove('active');
+                document.getElementById('success-modal').classList.add('active');
+                orderForm.reset();
+            } catch (err) {
+                alert("حدث خطأ!");
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerText = originalText;
+                submitBtn.innerText = "تأكيد الطلب الآن ✨";
             }
         };
     }
 
-    // Categories Sub-Filters
-    const mainCategoryButtons = document.querySelectorAll('.main-filter-btn');
-    mainCategoryButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            mainCategoryButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeCategory = btn.getAttribute('data-parent');
-            renderSubFilters(activeCategory);
-            renderAll();
-        });
-    });
+    // Google Login & Logout Buttons
+    const gLogin = document.getElementById('google-login-btn');
+    if (gLogin) gLogin.onclick = signInWithGoogle;
 
-    // My Orders Modal Initial Setup
-    setupOrdersEventListeners();
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.onclick = signOutUser;
+
+    const myOrdersBtn = document.getElementById('my-orders-btn');
+    if (myOrdersBtn) myOrdersBtn.onclick = (e) => { e.preventDefault(); openMyOrdersModal(); };
+
+    const closeOrders = document.getElementById('close-orders-modal');
+    if (closeOrders) closeOrders.onclick = () => document.getElementById('my-orders-modal').classList.remove('active');
 }
 
-function renderSubFilters(category) {
-    if (!subFiltersContainer) return;
-    const subs = parentSubMap[category] || [];
+// --- Product Logic (Restored to User Structure) ---
+function renderAll() {
+    if (!menContainer) return;
+    menContainer.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#fff;">جاري تحميل المنتجات...</div>';
 
-    if (subs.length > 0) {
-        subFiltersContainer.classList.add('active');
-        subFiltersContainer.style.display = 'flex';
-        subFiltersContainer.innerHTML = '<button class="sub-btn active" data-sub="all">الكل</button>' +
-            subs.map(s => `<button class="sub-btn" data-sub="${s.id}">${s.label}</button>`).join('');
+    let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
 
-        const subBtns = subFiltersContainer.querySelectorAll('.sub-btn');
-        subBtns.forEach(b => {
-            b.onclick = () => {
-                subBtns.forEach(x => x.classList.remove('active'));
-                b.classList.add('active');
-                renderAll(b.getAttribute('data-sub'));
-            };
-        });
+    if (typeof db !== 'undefined') {
+        db.collection('products').get().then(snapshot => {
+            let fireProds = [];
+            snapshot.forEach(doc => fireProds.push({ id: doc.id, ...doc.data() }));
+            combineAndRender(fireProds, localProds);
+        }).catch(() => combineAndRender([], localProds));
     } else {
-        subFiltersContainer.classList.remove('active');
-        subFiltersContainer.style.display = 'none';
-        subFiltersContainer.innerHTML = '';
+        combineAndRender([], localProds);
     }
 }
 
-async function fetchProducts() {
-    let allP = [];
+function combineAndRender(fireProds, localProds) {
+    remoteProducts = [...fireProds, ...localProds];
+    if (remoteProducts.length === 0 && typeof products !== 'undefined') remoteProducts = products;
 
-    // 1. Load Local Products (Backup/Manual)
-    try {
-        const local = JSON.parse(localStorage.getItem('diesel_products') || '[]');
-        allP = [...local];
-    } catch (e) { console.error("Local load error", e); }
+    // Unique by name/id
+    const seen = new Set();
+    remoteProducts = remoteProducts.filter(p => {
+        const id = p.id || p.name;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    });
 
-    // 2. Load Firebase Products (Live)
-    if (typeof db !== 'undefined') {
-        try {
-            const snapshot = await db.collection('products').get();
-            const remote = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Manual Sort
+    remoteProducts.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
-            // Merge: Remote products overwrite local if IDs match, otherwise add
-            remote.forEach(rp => {
-                const idx = allP.findIndex(lp => lp.id === rp.id);
-                if (idx !== -1) allP[idx] = rp;
-                else allP.push(rp);
-            });
-        } catch (error) {
-            console.error("Firebase fetch error:", error);
+    filterAndRender('men', activeCategory, 'all');
+}
+
+function renderSubFilters(parent) {
+    if (!subFiltersContainer) return;
+    const subs = parentSubMap[parent] || [];
+    if (subs.length === 0) {
+        subFiltersContainer.classList.remove('active');
+        subFiltersContainer.style.display = 'none';
+        return;
+    }
+
+    subFiltersContainer.innerHTML = '<button class="sub-btn active" onclick="applySubFilter(\'' + parent + '\', \'all\', this)">الكل</button>' +
+        subs.map(s => `<button class="sub-btn" onclick="applySubFilter('${parent}', '${s.id}', this)">${s.label}</button>`).join('');
+
+    subFiltersContainer.style.display = 'flex';
+    subFiltersContainer.classList.add('active');
+}
+
+window.applySubFilter = (parent, subId, btn) => {
+    subFiltersContainer.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterAndRender('men', parent, subId);
+};
+
+function filterAndRender(section, parent, sub) {
+    if (!menContainer) return;
+    let filtered = remoteProducts;
+
+    if (parent !== 'all') {
+        if (parent === 'clothes') {
+            const clothesSubs = parentSubMap.clothes.map(s => s.id);
+            filtered = filtered.filter(p => clothesSubs.includes(p.subCategory) || p.subCategory === 'clothes' || p.parentCategory === 'clothes');
+        } else if (parent === 'pants') {
+            const pantsSubs = parentSubMap.pants.map(s => s.id);
+            filtered = filtered.filter(p => pantsSubs.includes(p.subCategory) || p.subCategory === 'pants' || p.parentCategory === 'pants');
+        } else {
+            filtered = filtered.filter(p => p.subCategory === parent || p.parentCategory === parent);
         }
     }
 
-    // 3. Fallback to hardcoded products if everything is empty
-    if (allP.length === 0 && typeof products !== 'undefined') {
-        allP = products;
-    }
-
-    remoteProducts = allP;
-    return allP;
-}
-
-async function renderAll(subFilter = 'all') {
-    if (!menContainer) return;
-
-    // Show skeletons or clear
-    menContainer.innerHTML = Array(4).fill(0).map(() => '<div class="product-skeleton"></div>').join('');
-
-    const allData = await fetchProducts();
-    let filtered = allData;
-
-    if (activeCategory !== 'all') {
-        filtered = filtered.filter(p => p.parentCategory === activeCategory);
-    }
-
-    if (subFilter !== 'all') {
-        filtered = filtered.filter(p => p.subCategory === subFilter);
+    if (sub !== 'all') {
+        filtered = filtered.filter(p => p.subCategory === sub);
     }
 
     if (filtered.length === 0) {
-        menContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.5;">قريباً...</div>';
+        menContainer.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; opacity:0.5;">لا توجد نتائج مطابقة</div>`;
         return;
     }
 
     menContainer.innerHTML = filtered.map(p => `
         <div class="product-card" data-aos="fade-up">
-            ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
-            <div class="product-image">
-                <img src="${p.image}" alt="${p.name}" loading="lazy">
+            <div class="product-img">
+                ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
+                <img src="${p.image}" loading="lazy" alt="${p.name}">
                 <div class="product-actions" onclick="openSizeModal('${p.id}')">
-                    <button class="btn-add">إضافة للسلة</button>
+                    <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
                 </div>
             </div>
             <div class="product-info">
+                <span class="product-category-tag">Diesel Men</span>
                 <h3>${p.name}</h3>
-                <div class="price-container">
-                    <span class="price">${p.price} جنيه</span>
-                    ${p.oldPrice ? `<span class="old-price">${p.oldPrice} جنيه</span>` : ''}
-                </div>
+                <div class="price">${p.price}</div>
             </div>
         </div>
     `).join('');
 }
 
-window.openSizeModal = async (id) => {
-    const p = (remoteProducts.length > 0 ? remoteProducts : products).find(x => x.id === id);
+// --- Cart Logic ---
+window.openSizeModal = (id) => {
+    const p = remoteProducts.find(prod => prod.id === id);
     if (!p) return;
     selectedProductForSize = p;
+    selectedColor = (p.colorVariants && p.colorVariants.length > 0) ? p.colorVariants[0].name : "أساسي";
 
     modalProductName.innerText = p.name;
     modalProductPrice.innerText = `${p.price} جنيه`;
+    document.getElementById('modal-img').src = p.image;
 
-    const img = document.getElementById('modal-img');
-    img.src = p.image;
+    // Colors
+    const colorContainer = document.getElementById('modal-color-options');
+    const colors = (p.colorVariants && p.colorVariants.length > 0) ? p.colorVariants.map(v => v.name) : ["أساسي"];
+    colorContainer.innerHTML = colors.map((c, i) => `<button class="color-btn ${i === 0 ? 'selected' : ''}" onclick="modalSelectColor('${c}', this)">${c}</button>`).join('');
 
-    // Render Colors
-    const colorContainer = document.querySelector('.color-options');
-    if (colorContainer) {
-        const colors = (p.colorVariants && p.colorVariants.length > 0)
-            ? p.colorVariants.map(v => v.name)
-            : (p.colors && p.colors.length > 0 ? p.colors : ["أساسي"]);
+    // Initial Image for Color
+    if (p.colorVariants && p.colorVariants[0] && p.colorVariants[0].image) document.getElementById('modal-img').src = p.colorVariants[0].image;
 
-        colorContainer.innerHTML = colors.map((c, index) =>
-            `<button class="color-btn ${index === 0 ? 'selected' : ''}">${c}</button>`
-        ).join('');
-
-        const colorBtns = colorContainer.querySelectorAll('.color-btn');
-        colorBtns.forEach(btn => {
-            btn.onclick = () => {
-                colorBtns.forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                const selectedC = btn.innerText;
-
-                // Update Image if variant exists
-                if (p.colorVariants) {
-                    const variant = p.colorVariants.find(v => v.name === selectedC);
-                    if (variant && variant.image) img.src = variant.image;
-
-                    // Update Sizes for this color
-                    if (variant && variant.sizes && variant.sizes.length > 0) {
-                        const sizeContainer = document.querySelector('.size-options');
-                        sizeContainer.innerHTML = variant.sizes.map(s => `<button class="size-btn">${s}</button>`).join('');
-                        attachSizeEvents();
-                    }
-                }
-            };
-        });
-    }
-
-    // Re-render sizes for initial color
-    const sizeContainer = document.querySelector('.size-options');
-    let initialSizes = p.sizes || [];
-    if (p.colorVariants && p.colorVariants.length > 0) {
-        if (p.colorVariants[0].sizes) initialSizes = p.colorVariants[0].sizes;
-    }
-    sizeContainer.innerHTML = initialSizes.map(s => `<button class="size-btn">${s}</button>`).join('');
-    attachSizeEvents();
-
+    // Sizes
+    renderModalSizes(p, selectedColor);
     sizeModal.classList.add('active');
 };
 
-function attachSizeEvents() {
-    const sizeBtns = document.querySelectorAll('.size-btn');
-    sizeBtns.forEach(btn => {
-        btn.onclick = () => {
-            sizeBtns.forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-        };
-    });
+window.modalSelectColor = (color, btn) => {
+    selectedColor = color;
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const p = selectedProductForSize;
+    if (p.colorVariants) {
+        const v = p.colorVariants.find(x => x.name === color);
+        if (v && v.image) document.getElementById('modal-img').src = v.image;
+        else document.getElementById('modal-img').src = p.image;
+        renderModalSizes(p, color);
+    }
+};
+
+function renderModalSizes(p, color) {
+    const container = document.querySelector('.size-options');
+    let sizes = p.sizes || [];
+    if (p.colorVariants) {
+        const v = p.colorVariants.find(x => x.name === color);
+        if (v && v.sizes && v.sizes.length > 0) sizes = v.sizes;
+    }
+    container.innerHTML = sizes.map(s => `<button class="size-btn" onclick="addToCartFromModal('${s}')">${s}</button>`).join('');
 }
 
-window.addToCartFromModal = () => {
-    const selectedSizeBtn = document.querySelector('.size-btn.selected');
-    const selectedColorBtn = document.querySelector('.color-btn.selected');
-
-    if (!selectedSizeBtn) {
-        showToast("يرجى اختيار المقاس");
-        return;
-    }
-
-    const size = selectedSizeBtn.innerText;
-    const color = selectedColorBtn ? selectedColorBtn.innerText : "أساسي";
+window.addToCartFromModal = (size) => {
     const p = selectedProductForSize;
+    const color = selectedColor;
     const cartId = `${p.id}-${size}-${color}`;
 
-    let cartImage = p.image;
+    let img = p.image;
     if (p.colorVariants) {
-        const variant = p.colorVariants.find(v => v.name === color);
-        if (variant && variant.image) cartImage = variant.image;
+        const v = p.colorVariants.find(x => x.name === color);
+        if (v && v.image) img = v.image;
     }
 
     const existing = cart.find(i => i.cartId === cartId);
-    if (existing) {
-        existing.quantity++;
-    } else {
-        cart.push({ ...p, cartId, size, color, quantity: 1, image: cartImage });
-    }
+    if (existing) existing.quantity++;
+    else cart.push({ ...p, cartId, size, color, quantity: 1, image: img });
 
     updateCartUI();
     saveCartToFirebase();
@@ -455,36 +372,11 @@ window.addToCartFromModal = () => {
     openCartSidebar();
 };
 
-window.removeFromCart = (id) => {
-    cart = cart.filter(i => i.cartId !== id);
-    updateCartUI();
-    saveCartToFirebase();
-};
-
-window.updateCartQuantity = (id, delta) => {
-    const item = cart.find(i => i.cartId === id);
-    if (item) {
-        item.quantity += delta;
-        if (item.quantity <= 0) {
-            removeFromCart(id);
-        } else {
-            updateCartUI();
-            saveCartToFirebase();
-        }
-    }
-};
-
 function updateCartUI() {
-    const counts = document.querySelectorAll('.cart-count');
+    document.querySelectorAll('.cart-count').forEach(c => c.innerText = cart.reduce((s, i) => s + i.quantity, 0));
     const list = document.getElementById('cart-items-list');
     const totalEl = document.getElementById('cart-total-price');
-
-    // Always update the count badges if they exist
-    const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
-    counts.forEach(c => c.innerText = totalQty);
-
-    // Stop if the sidebar elements aren't ready yet
-    if (!list || !totalEl) return;
+    if (!list) return;
 
     if (cart.length === 0) {
         list.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
@@ -495,347 +387,131 @@ function updateCartUI() {
                 <img src="${i.image}">
                 <div class="cart-item-info">
                     <h4>${i.name}</h4>
-                    <div class="cart-item-details">المقاس: <span>${i.size}</span> | اللون: <span>${i.color}</span></div>
-                    
+                    <div class="cart-item-details"><span>${i.size}</span> | <span>${i.color}</span></div>
                     <div class="qty-control" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                        <button onclick="updateCartQuantity('${i.cartId}', -1)" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-minus" style="font-size:0.8rem;"></i></button>
-                        <span style="font-weight:bold; font-size:1rem; min-width:24px; text-align:center;">${i.quantity}</span>
-                        <button onclick="updateCartQuantity('${i.cartId}', 1)" style="background:var(--primary); border:none; color:#fff; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-plus" style="font-size:0.8rem;"></i></button>
+                        <button onclick="updateCartQuantity('${i.cartId}', -1)">-</button>
+                        <span>${i.quantity}</span>
+                        <button onclick="updateCartQuantity('${i.cartId}', 1)">+</button>
                     </div>
-
-                    <div style="color:#d4af37; font-weight:800; margin-top:10px; font-size:1.1rem;">${i.price * i.quantity} جنيه</div>
                 </div>
-                <button onclick="removeFromCart('${i.cartId}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:1.2rem; padding:8px; align-self: flex-start;">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <button onclick="removeFromCart('${i.cartId}')" style="color:red; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
             </div>
         `).join('');
-        const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-        totalEl.innerText = `${total} جنيه`;
+        totalEl.innerText = `${cart.reduce((s, i) => s + (i.price * i.quantity), 0)} جنيه`;
     }
 }
 
-function openCartSidebar() {
-    cartSidebar.classList.add('active');
-    cartOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeCartSidebar() {
-    cartSidebar.classList.remove('active');
-    cartOverlay.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-window.openCheckout = () => {
-    if (cart.length === 0) {
-        showToast("السلة فارغة");
-        return;
-    }
-    const checkoutModal = document.getElementById('checkout-modal');
-    closeCartSidebar();
-    checkoutModal.classList.add('active');
+window.updateCartQuantity = (id, d) => {
+    const i = cart.find(x => x.cartId === id);
+    if (i) { i.quantity += d; if (i.quantity <= 0) removeFromCart(id); else { updateCartUI(); saveCartToFirebase(); } }
 };
 
-function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 100);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-}
+window.removeFromCart = (id) => { cart = cart.filter(x => x.cartId !== id); updateCartUI(); saveCartToFirebase(); };
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-}
+function openCartSidebar() { cartSidebar.classList.add('open'); cartOverlay.classList.add('show'); }
+function closeCartSidebar() { cartSidebar.classList.remove('open'); cartOverlay.classList.remove('show'); }
+function closeMobileMenu() { if (mobileMenuBtn) { mobileMenuBtn.classList.remove('active'); navLinks.classList.remove('active'); } }
 
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-}
-
-function updateThemeIcon(theme) {
-    if (!themeToggle) return;
-    const icon = themeToggle.querySelector('i');
-    if (theme === 'dark') {
-        icon.className = 'fas fa-sun';
-    } else {
-        icon.className = 'fas fa-moon';
-    }
-}
-
-window.closeSuccessModal = () => {
-    document.getElementById('success-modal').classList.remove('active');
-};
-
-// ========== CART FIREBASE SYNC ==========
-
-async function saveCartToFirebase() {
-    console.log("💾 Saving cart...", cart);
-    // Save to localStorage always as backup
-    localStorage.setItem('diesel_cart', JSON.stringify(cart));
-
-    if (!currentUser || typeof db === 'undefined') {
-        console.log("ℹ️ No user logged in, only local save.");
-        return;
-    }
-
+// --- Auth & Orders (Latest Features) ---
+async function signInWithGoogle() {
     try {
-        await db.collection('user_carts').doc(currentUser.uid).set({
-            items: cart,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        console.log("✅ Cart saved to Firebase for user:", currentUser.uid);
-    } catch (error) {
-        console.error("❌ Error saving cart to Firebase:", error);
-    }
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(provider);
+        openMyOrdersModal();
+    } catch (e) { alert("خطأ في الدخول"); }
 }
 
-async function loadCartFromFirebase() {
-    if (!currentUser || typeof db === 'undefined') return;
-    console.log("⏳ Loading cart from Firebase for:", currentUser.uid);
-
-    try {
-        const doc = await db.collection('user_carts').doc(currentUser.uid).get();
-        if (doc.exists) {
-            const data = doc.data();
-            console.log("📄 Remote cart found:", data);
-            if (data.items) {
-                const remoteItems = data.items || [];
-                let merged = [...cart];
-                let changed = false;
-
-                remoteItems.forEach(ri => {
-                    const existing = merged.find(li => li.cartId === ri.cartId);
-                    if (!existing) {
-                        merged.push(ri);
-                        changed = true;
-                    } else {
-                        if (ri.quantity > existing.quantity) {
-                            existing.quantity = ri.quantity;
-                            changed = true;
-                        }
-                    }
-                });
-
-                if (changed) {
-                    console.log("🔄 Merged remote items into local cart.");
-                    cart = merged;
-                    updateCartUI();
-                    saveCartToFirebase();
-                } else {
-                    console.log("✅ Local cart is already up to date.");
-                }
-            }
-        } else {
-            console.log("📭 No remote cart document found. Current cart will be saved on next action.");
-            if (cart.length > 0) {
-                saveCartToFirebase();
-            }
-        }
-    } catch (error) {
-        console.error("❌ Error loading cart from Firebase:", error);
-    }
+async function signOutUser() {
+    await firebase.auth().signOut();
+    cart = [];
+    localStorage.removeItem('diesel_cart');
+    updateCartUI();
+    document.getElementById('my-orders-modal').classList.remove('active');
 }
-
-// ========== CUSTOMER AUTH & ORDERS TRACKING ==========
 
 function updateAuthUI() {
-    const authText = document.getElementById('auth-text');
-    const authBtn = document.getElementById('my-orders-btn');
-    const cartAuthBox = document.getElementById('cart-auth-box');
-    const loginBanner = document.getElementById('login-prompt-banner');
-
+    const txt = document.getElementById('auth-text');
     if (currentUser) {
-        if (authText) authText.innerText = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'حسابي';
-        if (authBtn) authBtn.classList.add('logged-in');
-        if (cartAuthBox) cartAuthBox.style.display = 'none';
-        if (loginBanner) loginBanner.style.display = 'none';
+        txt.innerText = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'حسابي';
+        document.getElementById('cart-auth-box').style.display = 'none';
+        document.getElementById('login-prompt-banner').style.display = 'none';
     } else {
-        if (authText) authText.innerText = 'دخول';
-        if (authBtn) authBtn.classList.remove('logged-in');
-        if (cartAuthBox) cartAuthBox.style.display = 'block';
-        if (loginBanner) loginBanner.style.display = 'block';
-    }
-}
-
-function setupOrdersEventListeners() {
-    const myOrdersBtn = document.getElementById('my-orders-btn');
-    const myOrdersModal = document.getElementById('my-orders-modal');
-    const closeOrdersModal = document.getElementById('close-orders-modal');
-    const googleLoginBtn = document.getElementById('google-login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-
-    if (myOrdersBtn) {
-        myOrdersBtn.onclick = (e) => {
-            e.preventDefault();
-            window.openMyOrdersModal();
-        };
-    }
-
-    if (closeOrdersModal) {
-        closeOrdersModal.onclick = () => {
-            if (myOrdersModal) myOrdersModal.classList.remove('active');
-        };
-    }
-
-    if (googleLoginBtn) {
-        googleLoginBtn.onclick = window.signInWithGoogle;
-    }
-
-    if (logoutBtn) {
-        logoutBtn.onclick = window.signOutUser;
+        txt.innerText = 'دخول';
+        document.getElementById('cart-auth-box').style.display = 'block';
+        document.getElementById('login-prompt-banner').style.display = 'block';
     }
 }
 
 window.openMyOrdersModal = () => {
     const modal = document.getElementById('my-orders-modal');
-    const loginSection = document.getElementById('orders-login-section');
-    const ordersSection = document.getElementById('orders-list-section');
-    if (!modal) return;
-
     if (currentUser) {
-        if (loginSection) loginSection.style.display = 'none';
-        if (ordersSection) ordersSection.style.display = 'block';
-        const emailDisplay = document.getElementById('user-email-display');
-        if (emailDisplay) emailDisplay.innerText = currentUser.email;
+        document.getElementById('orders-login-section').style.display = 'none';
+        document.getElementById('orders-list-section').style.display = 'block';
+        document.getElementById('user-email-display').innerText = currentUser.email;
         loadMyOrders();
     } else {
-        if (loginSection) loginSection.style.display = 'block';
-        if (ordersSection) ordersSection.style.display = 'none';
+        document.getElementById('orders-login-section').style.display = 'block';
+        document.getElementById('orders-list-section').style.display = 'none';
     }
-
     modal.classList.add('active');
 };
 
-window.signInWithGoogle = async () => {
-    try {
-        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await firebase.auth().signInWithPopup(provider);
-        showToast("تم تسجيل الدخول بنجاح ✅");
-        if (typeof window.openMyOrdersModal === 'function') {
-            window.openMyOrdersModal();
-        }
-    } catch (error) {
-        console.error("Google Sign-in Error:", error);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            alert("حدث خطأ أثناء تسجيل الدخول: " + error.message);
-        }
-    }
-};
-
-window.signOutUser = async () => {
-    try {
-        await firebase.auth().signOut();
-        // Clear cart on logout
-        cart = [];
-        localStorage.removeItem('diesel_cart');
-        updateCartUI();
-
-        showToast("تم تسجيل الخروج");
-        const modal = document.getElementById('my-orders-modal');
-        if (modal) modal.classList.remove('active');
-    } catch (error) {
-        console.error("Sign-out Error:", error);
-    }
-};
-
 async function loadMyOrders() {
-    const ordersList = document.getElementById('my-orders-list');
-    if (!currentUser || !db) return;
-
-    ordersList.innerHTML = '<div style="text-align: center; padding: 30px; opacity: 0.5;">جاري تحميل الطلبات...</div>';
-
+    const list = document.getElementById('my-orders-list');
+    list.innerHTML = 'جاري التحميل...';
     try {
-        // Try fetching by userId first, then by userEmail as fallback
-        let snapshot = await db.collection('orders')
-            .where('userId', '==', currentUser.uid)
-            .get();
-
-        // If no results, try by email
-        if (snapshot.empty && currentUser.email) {
-            snapshot = await db.collection('orders')
-                .where('userEmail', '==', currentUser.email)
-                .get();
-        }
-
-        // Sort results manually (newest first)
-        let orders = [];
-        snapshot.forEach(doc => {
-            orders.push({ id: doc.id, ...doc.data() });
-        });
-        orders.sort((a, b) => {
-            const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
-            const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
-            return dateB - dateA;
-        });
-
+        const snap = await db.collection('orders').where('userId', '==', currentUser.uid).get();
+        let orders = []; snap.forEach(doc => orders.push(doc.data()));
         if (orders.length === 0) {
-            ordersList.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 15px;"></i>
-                    <p style="opacity: 0.6;">لا توجد طلبات مسجلة لهذا الحساب</p>
-                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.5;">(${currentUser.email})</p>
-                    <p style="font-size: 0.8rem; margin-top: 20px; color: var(--primary);">تنبيه: الطلبات التي تمت بدون تسجيل دخول لا تظهر هنا.</p>
-                </div>`;
-            return;
+            const snapEmail = await db.collection('orders').where('userEmail', '==', currentUser.email).get();
+            snapEmail.forEach(doc => orders.push(doc.data()));
         }
+        orders.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-        let html = '';
-        orders.forEach(order => {
-            const dateStr = order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toLocaleDateString('ar-EG') : new Date(order.createdAt).toLocaleDateString('ar-EG')) : 'قيد المعالجة';
-            const statusColor = getOrderStatusColor(order.status);
+        list.innerHTML = orders.map(o => `
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>${o.createdAt?.toDate().toLocaleDateString('ar-EG') || ''}</span>
+                    <span style="color:var(--primary)">${o.status}</span>
+                </div>
+                <div style="font-size:0.8rem; margin:10px 0;">${o.items.map(i => `${i.name} x${i.quantity}`).join(', ')}</div>
+                <div style="font-weight:bold;">${o.total} جنيه</div>
+            </div>
+        `).join('') || 'لا توجد طلبات';
+    } catch (e) { list.innerHTML = 'خطأ في التحميل'; }
+}
 
-            html += `
-                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-size: 0.85rem; opacity: 0.7;"><i class="fas fa-calendar"></i> ${dateStr}</span>
-                        <span style="background: ${statusColor}; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">${order.status}</span>
-                    </div>
-                    <div style="font-size: 0.9rem; margin-bottom: 10px;">
-                        ${order.items.map(i => `<div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">${i.name} (${i.color} - ${i.size}) × ${i.quantity}</div>`).join('')}
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <span style="font-weight: bold; color: var(--primary);">${order.total} جنيه</span>
-                    </div>
-                </div>`;
-        });
-
-        ordersList.innerHTML = html;
-
-    } catch (error) {
-        console.error("Error loading orders:", error);
-        ordersList.innerHTML = '<div style="text-align: center; padding: 30px; color: #f44336;">حدث خطأ في تحميل الطلبات</div>';
+async function saveCartToFirebase() {
+    localStorage.setItem('diesel_cart', JSON.stringify(cart));
+    if (currentUser && db) {
+        await db.collection('user_carts').doc(currentUser.uid).set({ items: cart, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
 }
 
-function getOrderStatusClass(status) {
-    const map = {
-        'جديد': 'new',
-        'جاري التجهيز': 'preparing',
-        'تم الشحن': 'shipped',
-        'تم التسليم': 'delivered'
-    };
-    return map[status] || 'default';
+async function loadCartFromFirebase() {
+    if (!currentUser || !db) return;
+    const doc = await db.collection('user_carts').doc(currentUser.uid).get();
+    if (doc.exists) {
+        const remote = doc.data().items || [];
+        if (remote.length > 0) { cart = remote; updateCartUI(); }
+    }
 }
 
-function getOrderStatusColor(status) {
-    const map = {
-        'جديد': '#2196F3',
-        'جاري التجهيز': '#FF9800',
-        'تم الشحن': '#9C27B0',
-        'تم التسليم': '#4CAF50',
-        'ملغي': '#f44336'
-    };
-    return map[status] || '#666';
+function initTheme() {
+    const theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.getElementById('theme-toggle')?.querySelector('i');
+    if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
 }
+
+function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    const icon = document.getElementById('theme-toggle')?.querySelector('i');
+    if (icon) icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+function showToast(msg) { /* ... defined elsewhere or inline ... */ }
