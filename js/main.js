@@ -251,6 +251,7 @@ function setupEventListeners() {
                     // Clear cart
                     cart = [];
                     updateCartUI();
+                    saveCartToFirebase();
 
                     // Show success
                     checkoutModal.classList.remove('active');
@@ -575,26 +576,27 @@ async function loadCartFromFirebase() {
         const doc = await db.collection('user_carts').doc(currentUser.uid).get();
         if (doc.exists) {
             const data = doc.data();
-            if (data.items && data.items.length > 0) {
-                // Merge Logic: Add firebase items to local cart if they don't exist
-                const firebaseItems = data.items;
+            if (data.items) {
+                // IMPORTANT: If we have items in remote, they MUST be combined with local
+                const remoteItems = data.items || [];
+                let merged = [...cart];
 
-                firebaseItems.forEach(fi => {
-                    const existing = cart.find(li => li.cartId === fi.cartId);
+                remoteItems.forEach(ri => {
+                    const existing = merged.find(li => li.cartId === ri.cartId);
                     if (!existing) {
-                        cart.push(fi);
+                        merged.push(ri);
                     } else {
                         // Use the higher quantity
-                        existing.quantity = Math.max(existing.quantity, fi.quantity);
+                        existing.quantity = Math.max(existing.quantity, ri.quantity);
                     }
                 });
 
+                cart = merged;
                 updateCartUI();
-                // Save the merged cart back to Firebase and LocalStorage
-                saveCartToFirebase();
+                saveCartToFirebase(); // Save the merged result
             }
         } else {
-            // If no cart in Firebase, save the current local cart to Firebase
+            // First time user login OR no remote cart, save local to remote
             if (cart.length > 0) {
                 saveCartToFirebase();
             }
