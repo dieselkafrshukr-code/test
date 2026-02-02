@@ -937,503 +937,514 @@ footer {
 
 /* THE CARD STYLE */
 .cart-item {
-    background: #151515;
-    border-radius: 20px;
-    padding: 15px;
-    display: flex;
-    /* Default direction: RTL means img (first) is right */
-    align-items: center;
-    /* Center Vertically */
-    justify-content: space-between;
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    gap: 15px;
-}
 
-.cart-item img {
-    width: 80px !important;
-    height: 80px !important;
-    min-width: 80px !important;
-    border-radius: 12px;
-    object-fit: cover;
-    display: block;
-}
+    /* THE CARD STYLE */
+    .cart-item {
+        background: #151515;
+        border-radius: 20px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        gap: 20px;
+        /* Increased gap */
+    }
 
-.cart-item-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    /* Right aligned in RTL */
-    gap: 10px;
-}
+    .cart-item img {
+        width: 80px !important;
+        height: 80px !important;
+        min-width: 80px !important;
+        border-radius: 12px;
+        object-fit: cover;
+        display: block;
+        flex-shrink: 0;
+        /* Prevent shrinking/overlapping */
+        z-index: 1;
+    }
 
-.cart-item-info h4 {
-    color: #fff;
-    font-size: 0.95rem;
-    margin: 0;
-    font-weight: 700;
-}
+    .cart-item-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        z-index: 1;
+    }
 
-.cart-item-details {
-    color: #bbb;
-    font-size: 0.8rem;
-    display: flex;
-    gap: 5px;
-    margin: 0;
-}
+    .cart-item-info h4 {
+        color: #fff;
+        font-size: 1rem;
+        margin: 0;
+        font-weight: 700;
+        line-height: 1.3;
+    }
 
-/* Quantity Controls - White Buttons as per screenshot */
-.qty-control {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 5px;
-}
+    .cart-item-details {
+        color: #bbb;
+        font-size: 0.85rem;
+        display: flex;
+        gap: 5px;
+        margin: 0;
+    }
 
-.qty-control button {
-    width: 32px;
-    height: 32px;
-    background: #f0f0f0;
-    /* White/Light Grey */
-    border: none;
-    border-radius: 8px;
-    color: #000;
-    font-weight: 900;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-}
+    /* Quantity Controls - White Buttons with BLACK text */
+    .qty-control {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 8px;
+    }
 
-.qty-control button:hover {
-    transform: scale(1.1);
-    background: #fff;
-}
-
-.qty-control span {
-    color: #fff;
-    font-weight: 900;
-    font-size: 1.1rem;
-    min-width: 20px;
-    text-align: center;
-}
-
-.item-price-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    width: 100%;
-}
-
-.item-price {
-    color: #d4af37;
-    /* Gold */
-    font-weight: 800;
-    font-size: 1.1rem;
-}
-
-/* Quantity Controls - Red & Dark */
-.qty-control {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    align-self: flex-end;
-    background: transparent;
-}
-
-.qty-control button {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: none;
-    color: #fff;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-
-    /* Delete Button - Top LEFT in the screenshot (visual Left) */
-    /* LTR env: left: 15px. RTL env: right: 15px ? */
-    /* Screenshot: "x" is on left? No wait. */
-    /* Let's stick to absolute positioning assuming RTL context */
-    .delete-btn {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        /* Puts it on the visual Left in standard layout */
-        background: none;
+    .qty-control button {
+        width: 35px;
+        /* Slightly larger */
+        height: 35px;
+        background: #ffffff;
         border: none;
-        color: #ff3b30;
-        font-size: 1.1rem;
+        border-radius: 8px;
+        color: #000000 !important;
+        /* Force Black */
+        font-family: sans-serif;
+        /* Ensure symbol renders correctly */
+        font-weight: 900;
+        font-size: 1.4rem;
+        line-height: 1;
         cursor: pointer;
-        padding: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.2s, color 0.2s;
-        z-index: 2;
+        transition: transform 0.2s, background 0.2s;
+        padding-bottom: 4px;
+        /* Center alignment fix */
     }
 
-    .delete-btn:hover {
-        color: #ff0000;
-        transform: scale(1.2);
+    .qty-control button:hover {
+        transform: scale(1.1);
+        background: #e0e0e0;
     }
 
-    /* 6. Footer - Fixed at bottom */
-    .cart-footer {
-        padding: 25px;
-        background: #0a0a0a;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 10;
-    }
-
-    .cart-total {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .cart-total span {
+    .qty-control span {
         color: #fff;
-        font-size: 1.4rem;
         font-weight: 900;
-    }
-
-    .cart-total span:last-child {
-        color: #d4af37;
-        /* Gold price */
-    }
-
-    .checkout-btn {
-        width: 100%;
-        padding: 16px;
-        background: #e20613;
-        /* Primary Red */
-        color: #fff;
-        border: none;
-        border-radius: 15px;
         font-size: 1.2rem;
+        min-width: 25px;
+        text-align: center;
+    }
+
+    .item-price-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .item-price {
+        color: #d4af37;
+        /* Gold */
         font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    /* Quantity Controls - Red & Dark */
+    .qty-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        align-self: flex-end;
+        background: transparent;
+    }
+
+    .qty-control button {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: none;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1rem;
         cursor: pointer;
-        box-shadow: 0 5px 20px rgba(226, 6, 19, 0.4);
-    }
 
-    .checkout-btn:hover {
-        background: #c00511;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
-    }
+        /* Delete Button - Top LEFT in the screenshot (visual Left) */
+        /* LTR env: left: 15px. RTL env: right: 15px ? */
+        /* Screenshot: "x" is on left? No wait. */
+        /* Let's stick to absolute positioning assuming RTL context */
+        .delete-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            /* Puts it on the visual Left in standard layout */
+            background: none;
+            border: none;
+            color: #ff3b30;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, color 0.2s;
+            z-index: 2;
+        }
 
-    /* Mobile Responsive */
-    @media (max-width: 500px) {
-        .cart-sidebar {
+        .delete-btn:hover {
+            color: #ff0000;
+            transform: scale(1.2);
+        }
+
+        /* 6. Footer - Fixed at bottom */
+        .cart-footer {
+            padding: 25px;
+            background: #0a0a0a;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .cart-total span {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 900;
+        }
+
+        .cart-total span:last-child {
+            color: #d4af37;
+            /* Gold price */
+        }
+
+        .checkout-btn {
             width: 100%;
+            padding: 16px;
+            background: #e20613;
+            /* Primary Red */
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(226, 6, 19, 0.4);
         }
 
-        .cart-item img {
-            width: 80px;
-            height: 100px;
+        .checkout-btn:hover {
+            background: #c00511;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
         }
-    }
 
-    /* Responsive */
-    @media (max-width: 992px) {
-        .nav-links {
+        /* Mobile Responsive */
+        @media (max-width: 500px) {
+            .cart-sidebar {
+                width: 100%;
+            }
+
+            .cart-item img {
+                width: 80px;
+                height: 100px;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: -110%;
+                width: 80%;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.98);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 30px;
+                transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+                z-index: 2500;
+            }
+
+            .nav-links.active {
+                right: 0;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .product-img {
+                height: 220px;
+            }
+        }
+
+        /* High-End Luxury Modal Redesign */
+        .modal {
             position: fixed;
-            top: 0;
-            right: -110%;
-            width: 80%;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.98);
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #000;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 1000px;
+            height: auto;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: row;
+            /* Desktop Split Layout */
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Modal Left Side: Image Section */
+        .modal-product-img {
+            flex: 1.2;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        .modal-product-img img {
+            width: 100%;
+            height: auto;
+            max-height: 85vh;
+            object-fit: contain;
+            transition: transform 0.6s ease;
+            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast;
+            display: block;
+        }
+
+        .product-img img {
+            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        .modal-product-img:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Modal Right Side: Content Section */
+        .modal-body-content {
+            flex: 1;
+            padding: 60px 40px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            gap: 30px;
-            transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 2500;
+            text-align: right;
+            background: linear-gradient(135deg, #0d0d0d 0%, #000 100%);
+            overflow-y: auto;
         }
 
-        .nav-links.active {
-            right: 0;
+        .modal-title {
+            font-size: 2.2rem;
+            font-weight: 950;
+            color: #fff;
+            margin-bottom: 25px;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
         }
 
-        .mobile-menu-btn {
+        .promo-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .promo-price {
+            font-size: 3rem;
+            color: #d4af37;
+            font-weight: 900;
+            margin-bottom: 5px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .promo-info {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
             display: flex;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .products-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .product-img {
-            height: 220px;
-        }
-    }
-
-    /* High-End Luxury Modal Redesign */
-    .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.95);
-        backdrop-filter: blur(20px);
-        z-index: 9999;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .modal.active {
-        display: flex;
-    }
-
-    .modal-content {
-        background: #000;
-        border-radius: 32px;
-        width: 100%;
-        max-width: 1000px;
-        height: auto;
-        max-height: 90vh;
-        display: flex;
-        flex-direction: row;
-        /* Desktop Split Layout */
-        overflow: hidden;
-        position: relative;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
-    }
-
-    /* Modal Left Side: Image Section */
-    .modal-product-img {
-        flex: 1.2;
-        background: #000;
-        position: relative;
-        overflow: hidden;
-        height: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        image-rendering: high-quality;
-        image-rendering: -webkit-optimize-contrast;
-    }
-
-    .modal-product-img img {
-        width: 100%;
-        height: auto;
-        max-height: 85vh;
-        object-fit: contain;
-        transition: transform 0.6s ease;
-        image-rendering: high-quality;
-        image-rendering: -webkit-optimize-contrast;
-        display: block;
-    }
-
-    .product-img img {
-        image-rendering: high-quality;
-        image-rendering: -webkit-optimize-contrast;
-    }
-
-    .modal-product-img:hover img {
-        transform: scale(1.05);
-    }
-
-    /* Modal Right Side: Content Section */
-    .modal-body-content {
-        flex: 1;
-        padding: 60px 40px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        text-align: right;
-        background: linear-gradient(135deg, #0d0d0d 0%, #000 100%);
-        overflow-y: auto;
-    }
-
-    .modal-title {
-        font-size: 2.2rem;
-        font-weight: 950;
-        color: #fff;
-        margin-bottom: 25px;
-        line-height: 1.2;
-        letter-spacing: -0.5px;
-    }
-
-    .promo-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 25px;
-        border-radius: 20px;
-        margin-bottom: 30px;
-    }
-
-    .promo-price {
-        font-size: 3rem;
-        color: #d4af37;
-        font-weight: 900;
-        margin-bottom: 5px;
-        font-family: 'Outfit', sans-serif;
-    }
-
-    .promo-info {
-        font-size: 0.85rem;
-        color: rgba(255, 255, 255, 0.5);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 15px;
-    }
-
-    .promo-info span i {
-        color: var(--primary);
-        margin-left: 8px;
-    }
-
-    .size-label {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: rgba(255, 255, 255, 0.9);
-        margin: 30px 0 15px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .color-options,
-    .size-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        justify-content: flex-start;
-        /* Desktop alignment */
-    }
-
-    /* Premium Selection Buttons */
-    .color-btn,
-    .size-btn {
-        background: transparent;
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
-        padding: 14px 28px;
-        border-radius: 100px;
-        /* Pill shape */
-        cursor: pointer;
-        font-weight: 800;
-        font-size: 0.9rem;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .color-btn:hover,
-    .size-btn:hover {
-        border-color: rgba(255, 255, 255, 0.3);
-        transform: translateY(-3px);
-    }
-
-    .color-btn.selected,
-    .size-btn.active {
-        background: #fff;
-        color: #000;
-        border-color: #fff;
-        box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
-    }
-
-    .color-btn.selected {
-        background: var(--primary);
-        color: #fff;
-        border-color: var(--primary);
-        box-shadow: 0 10px 20px rgba(226, 6, 19, 0.3);
-    }
-
-    /* Floating Close Button */
-    .close-modal {
-        position: absolute;
-        top: 30px;
-        right: 30px;
-        z-index: 100;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.2rem;
-        backdrop-filter: blur(10px);
-        transition: 0.3s;
-    }
-
-    .close-modal:hover {
-        background: var(--primary);
-        border-color: var(--primary);
-        transform: rotate(90deg);
-    }
-
-    /* Mobile Adjustments */
-    @media (max-width: 900px) {
-        .modal-content {
             flex-direction: column;
-            max-height: 85vh;
-            max-width: 500px;
-            border-radius: 24px;
+            gap: 8px;
+            margin-top: 15px;
         }
 
-        .modal-product-img {
-            flex: none;
-            height: 350px;
-            min-height: auto;
+        .promo-info span i {
+            color: var(--primary);
+            margin-left: 8px;
         }
 
-        .modal-body-content {
-            padding: 40px 25px;
-            text-align: center;
+        .size-label {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 30px 0 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .color-options,
         .size-options {
-            justify-content: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-start;
+            /* Desktop alignment */
         }
 
-        .promo-price {
-            font-size: 2.2rem;
+        /* Premium Selection Buttons */
+        .color-btn,
+        .size-btn {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 100px;
+            /* Pill shape */
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 0.9rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .modal-title {
-            font-size: 1.6rem;
+        .color-btn:hover,
+        .size-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
         }
 
+        .color-btn.selected,
+        .size-btn.active {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .color-btn.selected {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(226, 6, 19, 0.3);
+        }
+
+        /* Floating Close Button */
         .close-modal {
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
         }
-    }
 
-
-    /* Success Modal specific styles */
-    .success-icon {
-        animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes scaleUp {
-        from {
-            transform: scale(0);
-            opacity: 0;
+        .close-modal:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: rotate(90deg);
         }
 
-        to {
-            transform: scale(1);
-            opacity: 1;
+        /* Mobile Adjustments */
+        @media (max-width: 900px) {
+            .modal-content {
+                flex-direction: column;
+                max-height: 85vh;
+                max-width: 500px;
+                border-radius: 24px;
+            }
+
+            .modal-product-img {
+                flex: none;
+                height: 350px;
+                min-height: auto;
+            }
+
+            .modal-body-content {
+                padding: 40px 25px;
+                text-align: center;
+            }
+
+            .color-options,
+            .size-options {
+                justify-content: center;
+            }
+
+            .promo-price {
+                font-size: 2.2rem;
+            }
+
+            .modal-title {
+                font-size: 1.6rem;
+            }
+
+            .close-modal {
+                top: 20px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+            }
         }
-    }
+
+
+        /* Success Modal specific styles */
+        .success-icon {
+            animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes scaleUp {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
