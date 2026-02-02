@@ -1482,15 +1482,15 @@ footer {
 
     .modal-product-img {
         flex: none;
-        height: 250px;
-        min-height: 200px;
-        max-height: 280px;
+        height: 450px;
+        max-height: 55vh;
+        background: #000;
     }
 
     .modal-product-img img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
     }
 
     .modal-body-content {
