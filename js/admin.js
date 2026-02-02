@@ -82,21 +82,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-password').value;
             const errEl = document.getElementById('login-error');
 
             try {
+                // Determine Role
                 let role = 'none';
-                if (pass === 'admin123') role = 'products';
-                else if (pass === 'admin1234') role = 'orders';
+                let email = '';
 
+                if (pass === 'admin123') {
+                    role = 'products';
+                    email = 'products@diesel.com'; // Master email for products
+                } else if (pass === 'admin1234') {
+                    role = 'orders';
+                    email = 'orders@diesel.com'; // Master email for orders
+                } else {
+                    errEl.innerText = "كلمة السر غير صحيحة ❌";
+                    errEl.style.display = 'block';
+                    return;
+                }
+
+                // Temporary: We will use a simplified login that doesn't strictly depend on Firebase Auth registry 
+                // but still gives us a 'user' session for rules.
+                // IMPORTANT: You must have these two users (products@diesel.com and orders@diesel.com) 
+                // created in your Firebase Auth console for this to work perfectly.
                 await firebase.auth().signInWithEmailAndPassword(email, pass);
+
                 localStorage.setItem('adminRole', role);
                 adminRole = role;
                 applyRoleRestrictions();
+                location.reload();
+
             } catch (err) {
-                errEl.innerText = "خطأ في تسجيل الدخول: " + err.message;
+                console.error(err);
+                errEl.innerText = "خطأ في الدخول: تأكد من تفعيل الحساب في Firebase";
                 errEl.style.display = 'block';
             }
         };
