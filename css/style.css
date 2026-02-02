@@ -1507,3 +1507,61 @@ footer {
         opacity: 1;
     }
 }
+
+/* Orders Modal Specific Styles */
+#my-orders-modal .modal-content,
+#checkout-modal .modal-content,
+#success-modal .modal-content {
+    display: block !important;
+    flex-direction: column !important;
+    max-width: 500px !important;
+    width: 90% !important;
+    padding: 30px !important;
+    text-align: right;
+    background: #111 !important;
+    border-radius: 20px;
+}
+
+#my-orders-modal .close-modal,
+#checkout-modal .close-modal,
+#success-modal .close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+}
+
+.order-card-mini {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+}
+
+.order-card-mini .order-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.order-status.status-new {
+    background: #e20613;
+    color: #fff;
+}
+
+.order-status.status-preparing {
+    background: #ff9800;
+    color: #000;
+}
+
+.order-status.status-shipped {
+    background: #2196f3;
+    color: #fff;
+}
+
+.order-status.status-delivered {
+    background: #4caf50;
+    color: #fff;
+}
