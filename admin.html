@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم | ديزل كفر شكر</title>
-    <link rel="stylesheet" href="./css/style.css?v=1.1">
+    <link rel="stylesheet" href="./css/style.css?v=1.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -521,13 +521,7 @@
 
 <body>
 
-    <!-- PERSISTENT EXIT BUTTON (FORCED VISIBILITY) -->
-    <div style="position: fixed; top: 10px; right: 10px; z-index: 20000;">
-        <a href="./"
-            style="background: #e20613; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 50px; font-weight: 900; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(226,6,19,0.5); font-family: 'Cairo', sans-serif;">
-            <i class="fas fa-home"></i> العودة للموقع
-        </a>
-    </div>
+
 
     <div class="loader-overlay" id="global-loader">
         <div class="loader-content">
@@ -541,23 +535,14 @@
         <div
             style="background: var(--panel-bg); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 400px; text-align: center; position: relative;">
 
-            <!-- TOP EXIT BAR -->
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <img src="images/logo/logo.png" style="width: 40px;">
-                <button onclick="location.href='./'"
-                    style="background: #e20613; color: #fff; border: none; padding: 8px 18px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
-                    إغلاق / خروج <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <h2 style="margin-bottom: 25px; font-size: 1.4rem;">دخول لوحة التحكم</h2>
-
-            <!-- EMERGENCY EXIT -->
+            <!-- Premium Close Button (Matches Image Style) -->
             <button onclick="location.href='./'"
-                style="width:100%; padding:12px; background:#444; color:#fff; border:none; border-radius:10px; margin-bottom:20px; font-weight:bold; cursor:pointer; display:block;">
-                ❌ العودة للموقع (خروج)
+                style="position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.3s; z-index: 10;">
+                <i class="fas fa-times" style="font-size: 1.2rem;"></i>
             </button>
+
+            <img src="images/logo/logo.png" style="width: 80px; margin-bottom: 20px;">
+            <h2 style="margin-bottom: 25px; font-size: 1.4rem;">دخول لوحة التحكم</h2>
             <form id="login-form" style="display: flex; flex-direction: column; gap: 15px;">
                 <input type="email" id="login-email" placeholder="البريد الإلكتروني" required
                     style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:15px; border-radius:12px; color:#fff;">
