@@ -1116,18 +1116,27 @@ footer {
     }
 
     .cart-footer {
-        padding: 12px 15px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        padding: 15px 20px;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        background: #0d0d0d;
+        flex-shrink: 0;
+        /* Prevent footer from shrinking */
     }
 
     .checkout-btn {
-        padding: 12px;
-        font-size: 1rem;
-        border-radius: 10px;
+        padding: 15px;
+        font-size: 1.1rem;
+        border-radius: 12px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 54px;
+        /* Ensure enough height for text */
     }
 
     #cart-auth-box {
-        padding: 10px !important;
+        padding: 8px 15px !important;
     }
 
     .cart-total span {
