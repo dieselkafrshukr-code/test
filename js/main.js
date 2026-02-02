@@ -99,6 +99,15 @@ const parentSubMap = {
 };
 
 function setupEventListeners() {
+    // Navbar Scroll Effect
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
     // Nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.onclick = () => closeMobileMenu();

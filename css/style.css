@@ -61,7 +61,7 @@
     --text-muted: #555555;
     --card-bg: #ffffff;
     --card-border: rgba(0, 0, 0, 0.06);
-    --nav-scrolled: rgba(255, 255, 255, 0.9);
+    --nav-scrolled: rgba(255, 255, 255, 0.7);
     --nav-text: #1a1a1a;
     --footer-bg: #111;
 }
@@ -73,7 +73,7 @@
     --text-muted: #aaaaaa;
     --card-bg: rgba(255, 255, 255, 0.03);
     --card-border: rgba(255, 255, 255, 0.08);
-    --nav-scrolled: rgba(0, 0, 0, 0.85);
+    --nav-scrolled: rgba(0, 0, 0, 0.7);
     --nav-text: #ffffff;
     --footer-bg: #050505;
 }
@@ -243,8 +243,8 @@ img {
 
 .navbar.scrolled {
     background: var(--nav-scrolled);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
     padding: 15px 0;
     border-bottom: 1px solid var(--card-border);
 }
