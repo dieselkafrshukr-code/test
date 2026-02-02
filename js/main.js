@@ -142,6 +142,21 @@ function setupEventListeners() {
 
     if (closeModal) closeModal.onclick = () => sizeModal.classList.remove('active');
 
+    // Checkout Button - MUST OPEN MODAL
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.onclick = () => {
+            if (cart.length === 0) return alert("السلة فارغة!");
+            closeCartSidebar();
+            document.getElementById('checkout-modal').classList.add('active');
+        };
+    }
+
+    const closeCheckout = document.getElementById('close-checkout');
+    if (closeCheckout) closeCheckout.onclick = () => document.getElementById('checkout-modal').classList.remove('active');
+
+    if (closeModal) closeModal.onclick = () => sizeModal.classList.remove('active');
+
     // Checkout Form
     const orderForm = document.getElementById('order-form');
     if (orderForm) {
@@ -328,6 +343,7 @@ window.openSizeModal = (id) => {
     sizeModal.classList.add('active');
 };
 
+// Global handlers for buttons generated via innerHTML
 window.modalSelectColor = (color, btn) => {
     selectedColor = color;
     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
