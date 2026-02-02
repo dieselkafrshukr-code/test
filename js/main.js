@@ -411,22 +411,35 @@ function updateCartUI() {
     if (!list) return;
 
     if (cart.length === 0) {
-        list.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
+        list.innerHTML = '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; opacity:0.5; gap:20px;">' +
+            '<i class="fas fa-shopping-bag" style="font-size:3rem;"></i>' +
+            '<p>السلة فارغة حالياً</p>' +
+            '</div>';
         totalEl.innerText = '0 جنيه';
     } else {
         list.innerHTML = cart.map(i => `
             <div class="cart-item">
-                <img src="${i.image}">
+                <img src="${i.image}" alt="${i.name}">
+                
                 <div class="cart-item-info">
                     <h4>${i.name}</h4>
-                    <div class="cart-item-details"><span>${i.size}</span> | <span>${i.color}</span></div>
-                    <div class="qty-control" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                        <button onclick="updateCartQuantity('${i.cartId}', -1)">-</button>
-                        <span>${i.quantity}</span>
-                        <button onclick="updateCartQuantity('${i.cartId}', 1)">+</button>
+                    <div class="cart-item-details">
+                        المقاس: ${i.size || 'M'} | اللون: ${i.color || 'أساسي'}
                     </div>
+                    
+                    <div class="item-price-row">
+                        <div class="qty-control">
+                           <button class="qty-btn-inc" onclick="updateCartQuantity('${i.cartId}', 1)">+</button>
+                            <span>${i.quantity}</span>
+                            <button class="qty-btn-dec" onclick="updateCartQuantity('${i.cartId}', -1)">−</button>
+                        </div>
+                   <div class="item-price">${i.price * i.quantity} جنيه</div>
+             </div>
                 </div>
-                <button onclick="removeFromCart('${i.cartId}')" style="color:red; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
+
+                <button class="delete-btn" onclick="removeFromCart('${i.cartId}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
         `).join('');
         totalEl.innerText = `${cart.reduce((s, i) => s + (i.price * i.quantity), 0)} جنيه`;
@@ -467,11 +480,9 @@ function updateAuthUI() {
     if (currentUser) {
         txt.innerText = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'حسابي';
         document.getElementById('cart-auth-box').style.display = 'none';
-        document.getElementById('login-prompt-banner').style.display = 'none';
     } else {
         txt.innerText = 'دخول';
         document.getElementById('cart-auth-box').style.display = 'block';
-        document.getElementById('login-prompt-banner').style.display = 'block';
     }
 }
 
