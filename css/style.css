@@ -693,6 +693,10 @@ img {
     height: 100%;
     object-fit: cover;
     transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .product-card:hover .product-img img {

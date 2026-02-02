@@ -246,7 +246,7 @@ async function handleVariantImage(input, id) {
     }
 }
 
-async function compressImage(base64, maxWidth = 1800) {
+async function compressImage(base64, maxWidth = 2400) {
     return new Promise((resolve) => {
         const img = new Image();
         img.src = base64;
@@ -269,7 +269,7 @@ async function compressImage(base64, maxWidth = 1800) {
             ctx.imageSmoothingQuality = 'high';
 
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.92));
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
         };
     });
 }
