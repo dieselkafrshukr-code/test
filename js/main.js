@@ -165,6 +165,7 @@ function setupEventListeners() {
         adminBtn.addEventListener('click', (e) => {
             e.preventDefault();
             console.log("🚀 Navigating to Admin Panel...");
+            sessionStorage.setItem('force_admin_login', 'true');
             window.location.href = 'admin.html';
         });
     }
