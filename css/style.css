@@ -236,9 +236,9 @@ img {
     width: 100%;
     z-index: 2000;
     padding: 25px 0;
-    background: transparent;
+    background: var(--bg-color);
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    border-bottom: 1px solid transparent;
+    border-bottom: 1px solid var(--card-border);
 }
 
 .navbar.scrolled {
