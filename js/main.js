@@ -186,7 +186,8 @@ function setupEventListeners() {
                     color: i.color,
                     quantity: i.quantity,
                     price: i.price,
-                    total: i.price * i.quantity
+                    total: i.price * i.quantity,
+                    image: i.image
                 })),
                 total: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
                 status: "جديد",
@@ -518,16 +519,38 @@ async function loadMyOrders() {
         }
         orders.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-        list.innerHTML = orders.map(o => `
-            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between;">
-                    <span>${o.createdAt?.toDate().toLocaleDateString('ar-EG') || ''}</span>
-                    <span style="color:var(--primary)">${o.status}</span>
+        list.innerHTML = orders.map(o => {
+            const statusClass = o.status === 'جديد' ? 'status-new' :
+                o.status === 'جاري التجهيز' ? 'status-preparing' :
+                    o.status === 'تم الشحن' ? 'status-shipped' :
+                        o.status === 'تم التسليم' ? 'status-delivered' : 'status-new';
+
+            return `
+            <div class="order-card-mini">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
+                    <span style="font-size:0.85rem; opacity:0.6; font-family:'Outfit', sans-serif;">${o.createdAt?.toDate().toLocaleDateString('ar-EG') || ''}</span>
+                    <span class="order-status ${statusClass}">${o.status}</span>
                 </div>
-                <div style="font-size:0.8rem; margin:10px 0;">${o.items.map(i => `${i.name} x${i.quantity}`).join(', ')}</div>
-                <div style="font-weight:bold;">${o.total} جنيه</div>
-            </div>
-        `).join('') || 'لا توجد طلبات';
+                
+                <div class="order-items-list">
+                    ${o.items.map(i => `
+                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:12px;">
+                            <img src="${i.image}" style="width:50px; height:60px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                            <div style="flex:1; text-align:right;">
+                                <div style="font-weight:700; font-size:0.95rem;">${i.name}</div>
+                                <div style="font-size:0.8rem; opacity:0.6;">${i.size} | ${i.color} | x${i.quantity}</div>
+                            </div>
+                            <div style="font-weight:900; color:var(--primary);">${i.price} ج.م</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div style="margin-top:15px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700;">إجمالي الطلب:</span>
+                    <span style="font-weight:900; font-size:1.2rem; color:var(--primary); font-family:'Outfit', sans-serif;">${o.total} جنيه</span>
+                </div>
+            </div>`;
+        }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5;">لا توجد طلبات سابقة</div>';
     } catch (e) { list.innerHTML = 'خطأ في التحميل'; }
 }
 
