@@ -424,22 +424,19 @@ function updateCartUI() {
                 <div class="cart-item-info">
                     <h4>${i.name}</h4>
                     <div class="cart-item-details">
-                        المقاس: ${i.size || 'M'} | اللون: ${i.color || 'أساسي'}
+                        ${i.size || 'M'} | ${i.color || 'أساسي'}
                     </div>
                     
-                    <div class="item-price-row">
-                        <div class="qty-control">
-                           <button class="qty-btn-inc" onclick="updateCartQuantity('${i.cartId}', 1)">+</button>
-                            <span>${i.quantity}</span>
-                            <button class="qty-btn-dec" onclick="updateCartQuantity('${i.cartId}', -1)">−</button>
-                        </div>
-                   <div class="item-price">${i.price * i.quantity} جنيه</div>
-             </div>
+                    <div class="qty-control">
+                        <button class="qty-btn-inc" onclick="updateCartQuantity('${i.cartId}', 1)">+</button>
+                        <span>${i.quantity}</span>
+                        <button class="qty-btn-dec" onclick="updateCartQuantity('${i.cartId}', -1)">−</button>
+                    </div>
                 </div>
 
-                <button class="delete-btn" onclick="removeFromCart('${i.cartId}')">
+                <div class="delete-btn" onclick="removeFromCart('${i.cartId}')">
                     <i class="fas fa-trash-alt"></i>
-                </button>
+                </div>
             </div>
         `).join('');
         totalEl.innerText = `${cart.reduce((s, i) => s + (i.price * i.quantity), 0)} جنيه`;
