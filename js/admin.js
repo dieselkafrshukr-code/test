@@ -242,7 +242,8 @@ async function handleVariantImage(input, id) {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const base64 = e.target.result;
-            const compressed = await compressImage(base64);
+            // Variants can be smaller to save space (800px is plenty)
+            const compressed = await compressImage(base64, 800);
             const v = colorVariants.find(v => v.id === id);
             if (v) {
                 v.image = compressed;
@@ -253,7 +254,7 @@ async function handleVariantImage(input, id) {
     }
 }
 
-async function compressImage(base64, maxWidth = 2400) {
+async function compressImage(base64, maxWidth = 1200) {
     return new Promise((resolve) => {
         const img = new Image();
         img.src = base64;
@@ -271,12 +272,12 @@ async function compressImage(base64, maxWidth = 2400) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
 
-            // Premium Sharpening / Smoothing
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.95));
+            // Quality 0.7 - 0.8 is best for Firestore size/quality balance
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
         };
     });
 }
@@ -327,6 +328,14 @@ if (saveProductForm) {
             updatedAt: new Date().toISOString()
         };
         try {
+            // Check Document Size (Firestore Limit: 1MB)
+            const stringData = JSON.stringify(data);
+            const sizeInBytes = new Blob([stringData]).size;
+            if (isFirebaseReady && sizeInBytes > 1000000) {
+                showLoader(false);
+                return alert("⚠️ حجم المنتج كبير جداً بسبب كثرة الصور عالية الجودة. يرجى تقليل عدد الألوان أو استخدام صور أصغر.");
+            }
+
             if (isFirebaseReady) {
                 if (id) await productsCol.doc(id).update(data);
                 else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await productsCol.add(data); }
