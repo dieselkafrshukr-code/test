@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // Set persistence to SESSION so it doesn't stay logged in after closing the tab
+                await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
                 // Standard Firebase Login with typed credentials
                 await firebase.auth().signInWithEmailAndPassword(email, pass);
 
