@@ -11,6 +11,10 @@ let selectedProductForSize = null;
 let selectedColor = null;
 let activeCategory = "all";
 let remoteProducts = []; // To store products from Firebase
+let shippingCosts = {};
+const governorates = [
+    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
+];
 
 // Firebase Config
 const firebaseConfig = {
@@ -122,16 +126,11 @@ function initElements() {
     loadShippingData();
 }
 
-let shippingCosts = {};
-const governorates = [
-    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
-];
-
 async function loadShippingData() {
     const govSelect = document.getElementById('customer-gov');
     if (govSelect) {
         govSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>' +
-            governorates.sort().map(g => `<option value="${g}">${g}</option>`).join('');
+            governorates.sort().map(g => `<option value="${g}" style="background: #111; color: #fff;">${g}</option>`).join('');
     }
 
     if (db) {
