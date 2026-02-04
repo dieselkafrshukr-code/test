@@ -14,6 +14,10 @@ let isFirebaseReady = false;
 let messaging = null; // Add messaging variable
 let adminRole = localStorage.getItem('adminRole') || 'none';
 
+const governorates = [
+    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
+];
+
 // Initialize Firebase
 if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
@@ -41,7 +45,8 @@ if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
 
             if (adminRole === 'products') { showTab('products'); loadProducts(); }
             else if (adminRole === 'orders') { showTab('orders'); loadOrders(); setupRealtimeNotifications(); }
-            else if (adminRole === 'all') { showTab('products'); loadProducts(); setupRealtimeNotifications(); }
+            else if (adminRole === 'shipping') { showTab('shipping'); loadShippingCosts(); }
+            else if (adminRole === 'all') { showTab('products'); loadProducts(); loadShippingCosts(); setupRealtimeNotifications(); }
 
             // Initialize FCM Messaging
             initMessaging();
@@ -181,10 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-const governorates = [
-    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
-];
-
 async function loadShippingCosts() {
     const container = document.getElementById('shipping-list-container');
     if (!container) return;
@@ -233,18 +234,28 @@ function applyRoleRestrictions() {
     const tabProducts = document.getElementById('tab-products');
     const tabOrders = document.getElementById('tab-orders');
 
+    const tabShipping = document.getElementById('tab-shipping');
+
     if (adminRole === 'products') {
         if (tabProducts) tabProducts.style.display = 'flex';
         if (tabOrders) tabOrders.style.display = 'none';
+        if (tabShipping) tabShipping.style.display = 'none';
     } else if (adminRole === 'orders') {
         if (tabProducts) tabProducts.style.display = 'none';
         if (tabOrders) tabOrders.style.display = 'flex';
+        if (tabShipping) tabShipping.style.display = 'none';
+    } else if (adminRole === 'shipping') {
+        if (tabProducts) tabProducts.style.display = 'none';
+        if (tabOrders) tabOrders.style.display = 'none';
+        if (tabShipping) tabShipping.style.display = 'flex';
     } else if (adminRole === 'all') {
         if (tabProducts) tabProducts.style.display = 'flex';
         if (tabOrders) tabOrders.style.display = 'flex';
+        if (tabShipping) tabShipping.style.display = 'flex';
     } else {
         if (tabProducts) tabProducts.style.display = 'none';
         if (tabOrders) tabOrders.style.display = 'none';
+        if (tabShipping) tabShipping.style.display = 'none';
     }
 }
 
