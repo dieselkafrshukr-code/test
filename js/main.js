@@ -212,9 +212,11 @@ function setupEventListeners() {
     if (orderForm) {
         orderForm.onsubmit = async (e) => {
             e.preventDefault();
-            const submitBtn = orderForm.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('order-submit-btn');
+            const paymentMethod = orderForm.querySelector('input[name="payment-method"]:checked').value;
+
             submitBtn.disabled = true;
-            submitBtn.innerText = "جاري تأكيد الطلب...";
+            submitBtn.innerText = "جاري الحفظ...";
 
             const orderData = {
                 customerName: document.getElementById('customer-name').value,
@@ -232,13 +234,51 @@ function setupEventListeners() {
                 })),
                 total: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
                 status: "جديد",
+                paymentMethod: paymentMethod === 'cod' ? 'عند الاستلام' : 'أونلاين',
+                paymentStatus: "لم يتم الدفع",
                 userId: currentUser ? currentUser.uid : null,
                 userEmail: currentUser ? currentUser.email : null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
-                await db.collection('orders').add(orderData);
+                // Always save order to Firestore first
+                const docRef = await db.collection('orders').add(orderData);
+                const orderId = docRef.id;
+
+                if (paymentMethod === 'online') {
+                    submitBtn.innerText = "جاري التحويل للدفع...";
+                    // Update this URL to your deployed backend later
+                    const BACKEND_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://your-backend-url.com';
+
+                    const res = await fetch(`${BACKEND_URL}/pay`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            amount: orderData.total,
+                            orderId: orderId,
+                            customer: {
+                                name: orderData.customerName,
+                                email: orderData.userEmail || "test@test.com",
+                                phone: orderData.phone
+                            },
+                            items: cart.map(i => ({ id: i.id, quantity: i.quantity }))
+                        })
+                    });
+
+                    if (!res.ok) throw new Error("Backend error");
+                    const data = await res.json();
+
+                    // Clear cart before redirecting
+                    cart = [];
+                    updateCartUI();
+                    saveCartToFirebase();
+
+                    window.location.href = data.iframe;
+                    return;
+                }
+
+                // COD Flow
                 cart = [];
                 updateCartUI();
                 saveCartToFirebase();
@@ -246,10 +286,13 @@ function setupEventListeners() {
                 document.getElementById('success-modal').classList.add('active');
                 orderForm.reset();
             } catch (err) {
-                alert("حدث خطأ!");
+                console.error(err);
+                alert("حدث خطأ أثناء معالجة الطلب!");
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "تأكيد الطلب الآن ✨";
+                if (paymentMethod !== 'online') {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "تأكيد الطلب الآن ✨";
+                }
             }
         };
     }

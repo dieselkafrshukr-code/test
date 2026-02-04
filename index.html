@@ -323,6 +323,22 @@
                     <textarea id="customer-address" required placeholder="المحافظة، المركز، الشارع..."></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label>طريقة الدفع</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <label
+                            style="flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; text-align: center;">
+                            <input type="radio" name="payment-method" value="cod" checked style="margin-left: 5px;">
+                            دفع عند الاستلام
+                        </label>
+                        <label
+                            style="flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; text-align: center;">
+                            <input type="radio" name="payment-method" value="online" style="margin-left: 5px;">
+                            دفع أونلاين (كارت)
+                        </label>
+                    </div>
+                </div>
+
                 <div class="order-summary-mini">
                     <div class="summary-row">
                         <span>إجمالي الطلب:</span>
@@ -330,8 +346,8 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">تأكيد الطلب الآن
-                    ✨</button>
+                <button type="submit" id="order-submit-btn" class="btn btn-primary"
+                    style="width: 100%; margin-top: 15px;">تأكيد الطلب الآن ✨</button>
             </form>
         </div>
     </div>

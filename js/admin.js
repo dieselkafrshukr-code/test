@@ -612,7 +612,41 @@ async function loadOrders() {
         snapshot.forEach(doc => {
             const order = doc.data(); const id = doc.id; const date = order.createdAt ? order.createdAt.toDate().toLocaleString('ar-EG') : 'قيد المعالجة...';
             if (order.status === 'جديد') newCount++;
-            html += `<div class="order-card"><div class="order-header"><div><h3>${order.customerName}</h3><p style="font-size: 0.9rem; opacity: 0.7;"><i class="fas fa-clock"></i> ${date}</p></div><span class="order-status status-${getStatusClass(order.status)}">${order.status}</span></div><div style="font-size: 1rem; margin-bottom: 10px;"><p><i class="fas fa-phone"></i> <strong>الهاتف:</strong> <a href="tel:${order.phone}" style="color:var(--accent)">${order.phone}</a></p><p><i class="fas fa-map-marker-alt"></i> <strong>العنوان:</strong> ${order.address}</p></div><div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} (${item.color} - ${item.size}) x${item.quantity}</span><span style="font-weight: bold;">${item.total} ج.م</span></div>`).join('')}</div><div class="order-footer"><div style="font-size: 1.2rem; font-weight: 900;">الاجمالي: <span style="color:var(--accent)">${order.total} ج.م</span></div><div style="display: flex; gap: 8px;"><select onchange="updateOrderStatus('${id}', this.value)" class="btn-status"><option value="جديد" ${order.status === 'جديد' ? 'selected' : ''}>جديد</option><option value="جاري التجهيز" ${order.status === 'جاري التجهيز' ? 'selected' : ''}>جاري التجهيز</option><option value="تم الشحن" ${order.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option><option value="تم التسليم" ${order.status === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option><option value="ملغي" ${order.status === 'ملغي' ? 'selected' : ''}>ملغي</option></select><button onclick="deleteOrder('${id}')" class="btn-status" style="background:#f44336; border-color:#f44336;"><i class="fas fa-trash"></i></button></div></div></div>`;
+            html += `<div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <h3>${order.customerName}</h3>
+                                <p style="font-size: 0.9rem; opacity: 0.7;"><i class="fas fa-clock"></i> ${date}</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                                <span class="order-status status-${getStatusClass(order.status)}">${order.status}</span>
+                                <span style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;">
+                                    ${order.paymentMethod || 'دفع عند الاستلام'}
+                                </span>
+                                <span style="font-size: 0.75rem; font-weight: bold; color: ${order.paymentStatus === 'تم الدفع' ? '#4CAF50' : '#f44336'}">
+                                    <i class="fas ${order.paymentStatus === 'تم الدفع' ? 'fa-check-circle' : 'fa-hourglass-start'}"></i> ${order.paymentStatus || 'لم يتم الدفع'}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="font-size: 1rem; margin-bottom: 10px;">
+                            <p><i class="fas fa-phone"></i> <strong>الهاتف:</strong> <a href="tel:${order.phone}" style="color:var(--accent)">${order.phone}</a></p>
+                            <p><i class="fas fa-map-marker-alt"></i> <strong>العنوان:</strong> ${order.address}</p>
+                        </div>
+                        <div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} (${item.color} - ${item.size}) x${item.quantity}</span><span style="font-weight: bold;">${item.total} ج.م</span></div>`).join('')}</div>
+                        <div class="order-footer">
+                            <div style="font-size: 1.2rem; font-weight: 900;">الاجمالي: <span style="color:var(--accent)">${order.total} ج.م</span></div>
+                            <div style="display: flex; gap: 8px;">
+                                <select onchange="updateOrderStatus('${id}', this.value)" class="btn-status">
+                                    <option value="جديد" ${order.status === 'جديد' ? 'selected' : ''}>جديد</option>
+                                    <option value="جاري التجهيز" ${order.status === 'جاري التجهيز' ? 'selected' : ''}>جاري التجهيز</option>
+                                    <option value="تم الشحن" ${order.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option>
+                                    <option value="تم التسليم" ${order.status === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option>
+                                    <option value="ملغي" ${order.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                                </select>
+                                <button onclick="deleteOrder('${id}')" class="btn-status" style="background:#f44336; border-color:#f44336;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
         });
         ordersList.innerHTML = html;
         const badge = document.getElementById('new-orders-count');
