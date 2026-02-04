@@ -119,7 +119,40 @@ function initElements() {
     navLinks = document.querySelector('.nav-links');
     themeToggle = document.getElementById('theme-toggle');
     subFiltersContainer = document.getElementById('sub-filters-container');
+    loadShippingData();
 }
+
+let shippingCosts = {};
+const governorates = [
+    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
+];
+
+async function loadShippingData() {
+    const govSelect = document.getElementById('customer-gov');
+    if (govSelect) {
+        govSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>' +
+            governorates.sort().map(g => `<option value="${g}">${g}</option>`).join('');
+    }
+
+    if (db) {
+        try {
+            const doc = await db.collection('settings').doc('shipping').get();
+            if (doc.exists) shippingCosts = doc.data().costs || {};
+        } catch (e) { console.error("Error loading shipping costs", e); }
+    }
+}
+
+window.updateCheckoutTotal = () => {
+    const gov = document.getElementById('customer-gov').value;
+    const cost = shippingCosts[gov] || 0;
+    const itemsTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+
+    const shippingEl = document.getElementById('shipping-cost');
+    const totalEl = document.getElementById('form-total-price');
+
+    if (shippingEl) shippingEl.innerText = `${cost} جنيه`;
+    if (totalEl) totalEl.innerText = `${itemsTotal + cost} جنيه`;
+};
 
 const parentSubMap = {
     all: [],
@@ -199,6 +232,7 @@ function setupEventListeners() {
             if (cart.length === 0) return alert("السلة فارغة!");
             closeCartSidebar();
             document.getElementById('checkout-modal').classList.add('active');
+            updateCheckoutTotal();
         };
     }
 
@@ -218,9 +252,21 @@ function setupEventListeners() {
             submitBtn.disabled = true;
             submitBtn.innerText = "جاري الحفظ...";
 
+            const gov = document.getElementById('customer-gov').value;
+            const shippingCost = shippingCosts[gov] || 0;
+            const itemsTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+
+            if (!gov) {
+                alert("برجاء اختيار المحافظة!");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "تأكيد الطلب الآن ✨";
+                return;
+            }
+
             const orderData = {
                 customerName: document.getElementById('customer-name').value,
                 phone: document.getElementById('customer-phone').value,
+                gov: gov,
                 address: document.getElementById('customer-address').value,
                 items: cart.map(i => ({
                     id: i.id,
@@ -232,7 +278,9 @@ function setupEventListeners() {
                     total: i.price * i.quantity,
                     image: i.image
                 })),
-                total: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
+                itemsTotal: itemsTotal,
+                shippingCost: shippingCost,
+                total: itemsTotal + shippingCost,
                 status: "جديد",
                 paymentMethod: paymentMethod === 'cod' ? 'عند الاستلام' : 'أونلاين',
                 paymentStatus: "لم يتم الدفع",
@@ -535,6 +583,10 @@ function updateCartUI() {
             </div>
         `).join('');
         totalEl.innerText = `${cart.reduce((s, i) => s + (i.price * i.quantity), 0)} جنيه`;
+    }
+    // Sync checkout total if modal is open (or update it anyway)
+    if (document.getElementById('checkout-modal').classList.contains('active')) {
+        updateCheckoutTotal();
     }
 }
 

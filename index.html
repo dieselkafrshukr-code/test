@@ -319,8 +319,16 @@
                     <input type="tel" id="customer-phone" required placeholder="01xxxxxxxxx">
                 </div>
                 <div class="form-group">
+                    <label for="customer-gov">المحافظة</label>
+                    <select id="customer-gov" required onchange="updateCheckoutTotal()"
+                        style="width: 100%; height: 55px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0 15px;">
+                        <option value="" disabled selected>اختر المحافظة...</option>
+                        <!-- Governorates filled by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="customer-address">العنوان بالتفصيل</label>
-                    <textarea id="customer-address" required placeholder="المحافظة، المركز، الشارع..."></textarea>
+                    <textarea id="customer-address" required placeholder="المركز، الشارع، علامة مميزة..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -340,6 +348,11 @@
                 </div>
 
                 <div class="order-summary-mini">
+                    <div class="summary-row"
+                        style="font-size: 0.9rem; margin-bottom: 5px; opacity: 0.8; font-weight: normal; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
+                        <span>تكلفة الشحن:</span>
+                        <span id="shipping-cost">0 جنيه</span>
+                    </div>
                     <div class="summary-row">
                         <span>إجمالي الطلب:</span>
                         <span id="form-total-price">0 جنيه</span>

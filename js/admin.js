@@ -177,8 +177,51 @@ document.addEventListener('DOMContentLoaded', () => {
     if (firebase.auth().currentUser) {
         if (adminRole === 'products' || adminRole === 'all') { showTab('products'); loadProducts(); }
         else if (adminRole === 'orders') { showTab('orders'); loadOrders(); }
+        else if (adminRole === 'shipping') { showTab('shipping'); loadShippingCosts(); }
     }
 });
+
+const governorates = [
+    "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
+];
+
+async function loadShippingCosts() {
+    const container = document.getElementById('shipping-list-container');
+    if (!container) return;
+
+    showLoader(true);
+    let currentCosts = {};
+    try {
+        const doc = await db.collection('settings').doc('shipping').get();
+        if (doc.exists) currentCosts = doc.data().costs || {};
+    } catch (e) { console.error(e); }
+
+    container.innerHTML = governorates.map(gov => `
+        <div class="stat-card" style="padding: 15px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+            <label style="display:block; margin-bottom:10px; font-weight:bold;">${gov}</label>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <input type="number" class="shipping-input" data-gov="${gov}" value="${currentCosts[gov] || 0}" style="width:100%; padding:8px; background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px;">
+                <span>ج.م</span>
+            </div>
+        </div>
+    `).join('');
+    showLoader(false);
+}
+
+async function saveShippingCosts() {
+    const inputs = document.querySelectorAll('.shipping-input');
+    const costs = {};
+    inputs.forEach(input => {
+        costs[input.dataset.gov] = Number(input.value) || 0;
+    });
+
+    showLoader(true);
+    try {
+        await db.collection('settings').doc('shipping').set({ costs, updatedAt: new Date().toISOString() });
+        alert("تم حفظ تكاليف الشحن بنجاح! 🚚✅");
+    } catch (e) { alert("حدث خطأ أثناء الحفظ!"); }
+    showLoader(false);
+}
 
 function logout() {
     firebase.auth().signOut();
@@ -226,10 +269,17 @@ function showTab(tab) {
     if (tab === 'products') {
         document.getElementById('products-section').style.display = 'block';
         document.getElementById('orders-section').style.display = 'none';
+        document.getElementById('shipping-section').style.display = 'none';
     } else if (tab === 'orders') {
         document.getElementById('products-section').style.display = 'none';
         document.getElementById('orders-section').style.display = 'block';
+        document.getElementById('shipping-section').style.display = 'none';
         loadOrders();
+    } else if (tab === 'shipping') {
+        document.getElementById('products-section').style.display = 'none';
+        document.getElementById('orders-section').style.display = 'none';
+        document.getElementById('shipping-section').style.display = 'block';
+        loadShippingCosts();
     }
 }
 
@@ -630,12 +680,17 @@ async function loadOrders() {
                         </div>
                         <div style="font-size: 1rem; margin-bottom: 10px;">
                             <p><i class="fas fa-phone"></i> <strong>الهاتف:</strong> <a href="tel:${order.phone}" style="color:var(--accent)">${order.phone}</a></p>
-                            <p><i class="fas fa-map-marker-alt"></i> <strong>العنوان:</strong> ${order.address}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> <strong>المحافظة:</strong> ${order.gov || 'غير محدد'}</p>
+                            <p><i class="fas fa-map-marker"></i> <strong>العنوان:</strong> ${order.address}</p>
                         </div>
                         <div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} (${item.color} - ${item.size}) x${item.quantity}</span><span style="font-weight: bold;">${item.total} ج.م</span></div>`).join('')}</div>
                         <div class="order-footer">
-                            <div style="font-size: 1.2rem; font-weight: 900;">الاجمالي: <span style="color:var(--accent)">${order.total} ج.م</span></div>
-                            <div style="display: flex; gap: 8px;">
+                            <div style="font-size: 1rem; opacity: 0.8; margin-bottom: 5px;">
+                                <div style="display:flex; justify-content:space-between;"><span>إجمالي المنتجات:</span><span>${order.itemsTotal || (order.total - (order.shippingCost || 0))} ج.م</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span>مصاريف الشحن:</span><span>${order.shippingCost || 0} ج.م</span></div>
+                            </div>
+                            <div style="font-size: 1.3rem; font-weight: 900; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 5px;">الاجمالي النهائي: <span style="color:var(--accent)">${order.total} ج.م</span></div>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
                                 <select onchange="updateOrderStatus('${id}', this.value)" class="btn-status">
                                     <option value="جديد" ${order.status === 'جديد' ? 'selected' : ''}>جديد</option>
                                     <option value="جاري التجهيز" ${order.status === 'جاري التجهيز' ? 'selected' : ''}>جاري التجهيز</option>
@@ -685,7 +740,19 @@ async function exportOrders() {
         const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         snapshot.forEach(doc => {
             const o = doc.data(); const createdAt = o.createdAt ? o.createdAt.toDate() : null;
-            const row = { "التاريخ": createdAt ? createdAt.toLocaleString('ar-EG') : 'قيد المعالجة', "اسم العميل": o.customerName, "رقم الهاتف": o.phone, "الايميل": o.userEmail || 'زائر', "العنوان": o.address, "المنتجات": o.items.map(i => `${i.name} (${i.color}/${i.size}) x${i.quantity}`).join(' | '), "الإجمالي": o.total + " ج.م", "الحالة": o.status, "حالة الدفع": o.paymentStatus || 'كاش/عند الاستلام' };
+            const row = {
+                "التاريخ": createdAt ? createdAt.toLocaleString('ar-EG') : 'قيد المعالجة',
+                "اسم العميل": o.customerName,
+                "رقم الهاتف": o.phone,
+                "المحافظة": o.gov || 'غير محدد',
+                "العنوان": o.address,
+                "المنتجات": o.items.map(i => `${i.name} (${i.color}/${i.size}) x${i.quantity}`).join(' | '),
+                "إجمالي المنتجات": (o.itemsTotal || (o.total - (o.shippingCost || 0))) + " ج.م",
+                "مصاريف الشحن": (o.shippingCost || 0) + " ج.م",
+                "الإجمالي النهائي": o.total + " ج.م",
+                "الحالة": o.status,
+                "حالة الدفع": o.paymentStatus || 'كاش/عند الاستلام'
+            };
             allOrders.push(row); stats.revenue += Number(o.total || 0);
             if (createdAt && createdAt >= startOfToday) { todayOrders.push(row); stats.todayRevenue += Number(o.total || 0); }
         });
