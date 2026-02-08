@@ -1,7 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const admin = require("firebase-admin");
+const { createClient } = require('@supabase/supabase-js');
 const path = require("path");
 const fs = require("fs");
 
@@ -10,52 +10,39 @@ app.use(cors());
 app.use(express.json());
 
 // --- Paymob Configuration ---
-// يرجى استبدال هذه البيانات من لوحة تحكم Paymob الخاصة بك
 const API_KEY = "YOUR_PAYMOB_API_KEY";
-const INTEGRATION_ID = "YOUR_INTEGRATION_ID"; // كود الربط الخاص بك
-const IFRAME_ID = "YOUR_IFRAME_ID"; // كود الإطار (Iframe)
+const INTEGRATION_ID = "YOUR_INTEGRATION_ID";
+const IFRAME_ID = "YOUR_IFRAME_ID";
 
-// --- Firebase Admin Configuration ---
-const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
-
-if (fs.existsSync(serviceAccountPath)) {
-    const serviceAccount = require(serviceAccountPath);
-    if (admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-    }
-} else {
-    console.warn("⚠️ Warning: serviceAccountKey.json not found. Firebase features will be disabled.");
-}
-
-const db = admin.apps.length > 0 ? admin.firestore() : null;
+// --- Supabase Configuration ---
+const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- 1. طلب الدفع (Payment Request) ---
 app.post("/pay", async (req, res) => {
     const { amount, orderId, customer, items } = req.body;
 
     try {
-        // 🟢 الخطوة 1: المصادقة (Authentication)
+        // 🟢 الخطوة 1: المصادقة
         const auth = await axios.post(
             "https://accept.paymob.com/api/auth/tokens",
             { api_key: API_KEY }
         );
         const token = auth.data.token;
 
-        // 🟢 الخطوة 2: إنشاء طلب (Create Order)
-        // هنا يمكننا حساب السعر في السيرفر للتأكد من صحته (مطلب 12)
+        // 🟢 الخطوة 2: التحقق من السعر (Security Check)
         let calculatedAmount = amount;
-
-        if (db && items && items.length > 0) {
+        if (items && items.length > 0) {
             let total = 0;
             for (const item of items) {
-                const productDoc = await db.collection('products').doc(item.id).get();
-                if (productDoc.exists) {
-                    const price = parseFloat(productDoc.data().price.toString().replace(/[^0-9.]/g, ''));
+                const { data: product } = await supabase.from('products').select('price').eq('id', item.id).single();
+                if (product) {
+                    const price = parseFloat(product.price.toString().replace(/[^0-9.]/g, ''));
                     total += price * item.quantity;
                 }
             }
+            // Logic for adding shipping if needed can be added here
             if (total > 0) calculatedAmount = total;
         }
 
@@ -66,11 +53,11 @@ app.post("/pay", async (req, res) => {
                 delivery_needed: false,
                 amount_cents: Math.round(calculatedAmount * 100),
                 currency: "EGP",
-                items: [] // Paymob items list is optional here
+                items: []
             }
         );
 
-        // 🟢 الخطوة 3: استلام Payment Token (Payment Key Generation)
+        // 🟢 الخطوة 3: استلام Payment Token
         const paymentKeyResponse = await axios.post(
             "https://accept.paymob.com/api/acceptance/payment_keys",
             {
@@ -92,12 +79,12 @@ app.post("/pay", async (req, res) => {
             }
         );
 
-        // ربط ID الطلب في دايزل بـ ID الطلب في بايموب (اختياري)
-        if (db && orderId) {
-            await db.collection('orders').doc(orderId).update({
-                paymobOrderId: orderResponse.data.id,
+        // ربط ID الطلب
+        if (orderId) {
+            await supabase.from('orders').update({
+                paymobOrderId: orderResponse.data.id.toString(),
                 totalCalculated: calculatedAmount
-            });
+            }).eq('id', orderId);
         }
 
         res.json({
@@ -110,33 +97,31 @@ app.post("/pay", async (req, res) => {
     }
 });
 
-// --- 2. استلام النتيجة من Paymob (Transaction Callback) ---
-// يتم ضبط هذا الرابط في صفحة الربط في Paymob لوحة التحكم
+// --- 2. استلام النتيجة من Paymob ---
 app.post("/callback", async (req, res) => {
     const data = req.body;
-    const type = data.type; // TRANSACTION
+    const type = data.type;
     const transaction = data.obj;
 
     if (type === "TRANSACTION") {
         const success = transaction.success;
         const paymobOrderId = transaction.order.id;
-        const amount = transaction.amount_cents / 100;
 
-        if (success && db) {
+        if (success) {
             try {
-                // البحث عن الطلب في فايربيز وتحديث حالته
-                const snapshot = await db.collection('orders').where('paymobOrderId', '==', paymobOrderId).get();
-                if (!snapshot.empty) {
-                    const orderDoc = snapshot.docs[0];
-                    await orderDoc.ref.update({
+                // تحديث حالة الطلب في Supabase
+                const { error } = await supabase.from('orders')
+                    .update({
                         paymentStatus: "تم الدفع",
-                        status: "جاري التجهيز", // تحويل الحالة تلقائياً بعد الدفع
-                        transactionId: transaction.id
-                    });
-                    console.log(`✅ Order ${orderDoc.id} marked as paid.`);
-                }
+                        status: "جاري التجهيز",
+                        transactionId: transaction.id.toString()
+                    })
+                    .eq('paymobOrderId', paymobOrderId.toString());
+
+                if (error) throw error;
+                console.log(`✅ Order related to Paymob ID ${paymobOrderId} marked as paid.`);
             } catch (err) {
-                console.error("Firebase Update Error:", err);
+                console.error("Supabase Update Error:", err);
             }
         }
     }
@@ -146,5 +131,5 @@ app.post("/callback", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Paymob Server running on port ${PORT}`);
+    console.log(`🚀 Paymob Server (Supabase Edition) running on port ${PORT}`);
 });

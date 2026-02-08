@@ -1,34 +1,27 @@
-const admin = require('firebase-admin');
+const { createClient } = require('@supabase/supabase-js');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 
-// 1. إعداد الاتصال بـ Firebase
-const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+// ⚙️ نظام مزامنة التقارير - نسخة Supabase
+const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
 
-if (!fs.existsSync(serviceAccountPath)) {
-    console.error('❌ خطأ: ملف serviceAccountKey.json غير موجود!');
-    console.log('يرجى تحميل الملف من Firebase (Project Settings -> Service Accounts -> Generate new private key)');
-    process.exit(1);
-}
-
-const serviceAccount = require(serviceAccountPath);
-
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-}
-
-const db = admin.firestore();
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function generateDailyReport() {
-    console.log('⏳ جاري جلب البيانات وتحديث التقارير...');
+    console.log('⏳ جاري جلب البيانات من Supabase وتحديث التقارير...');
 
     try {
-        const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
+        // جلب الطلبات مرتبة حسب التاريخ
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('*')
+            .order('createdAt', { ascending: false });
 
-        if (snapshot.empty) {
+        if (error) throw error;
+
+        if (!orders || orders.length === 0) {
             console.log('📭 لا توجد طلبات في قاعدة البيانات.');
             return;
         }
@@ -46,25 +39,32 @@ async function generateDailyReport() {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        snapshot.forEach(doc => {
-            const o = doc.data();
-            const createdAt = o.createdAt ? o.createdAt.toDate() : null;
+        orders.forEach(o => {
+            const createdAt = o.createdAt ? new Date(o.createdAt) : null;
             const dateStr = createdAt ? createdAt.toLocaleString('ar-EG') : 'قيد المعالجة';
 
-            // تحويل المنتجات لنص مقروء
-            const itemsList = o.items ? o.items.map(i => `${i.name} (${i.color}/${i.size}) x${i.quantity}`).join(' | ') : 'بدون منتجات';
+            // تحويل المنتجات لنص مقروء (JSONB field in Supabase)
+            let items = o.items;
+            if (typeof items === 'string') {
+                try { items = JSON.parse(items); } catch (e) { }
+            }
+            const itemsList = Array.isArray(items)
+                ? items.map(i => `${i.name} (${i.color}/${i.size}) x${i.quantity}`).join(' | ')
+                : 'بدون منتجات';
 
             const orderEntry = {
                 "التاريخ": dateStr,
                 "اسم العميل": o.customerName || 'بدون اسم',
                 "رقم الهاتف": o.phone || 'بدون رقم',
-                "الايميل": o.userEmail || 'زائر',
+                "المحافظة": o.gov || 'غير محدد',
                 "العنوان": o.address || 'بدون عنوان',
                 "المنتجات": itemsList,
-                "الإجمالي": o.total || 0,
+                "إجمالي المنتجات": (o.itemsTotal || (o.total - (o.shippingCost || 0))) + " ج.م",
+                "مصاريف الشحن": (o.shippingCost || 0) + " ج.م",
+                "الإجمالي النهائي": o.total + " ج.م",
                 "الحالة": o.status || 'جديد',
                 "حالة الدفع": o.paymentStatus || 'كاش/عند الاستلام',
-                "المعرف ID": doc.id
+                "معرف الطلب": o.id
             };
 
             allOrders.push(orderEntry);
@@ -89,7 +89,7 @@ async function generateDailyReport() {
 
         // 1. ورقة الملخص العام
         const summaryData = [
-            ["إحصائيات المحل الشاملة", ""],
+            ["إحصائيات المحل الشاملة (Supabase)", ""],
             ["إجمالي عدد الطلبات", stats.totalOrders],
             ["طلبات تم تسليمها", stats.deliveredOrders],
             ["طلبات قيد التنفيذ", stats.pendingOrders],
@@ -108,9 +108,9 @@ async function generateDailyReport() {
         const wsAll = XLSX.utils.json_to_sheet(allOrders);
         XLSX.utils.book_append_sheet(workbook, wsAll, "كافة الطلبات");
 
-        // ضبط عرض الأعمدة لكل الأوراق
+        // ضبط عرض الأعمدة
         const cols = [
-            { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 25 }, { wch: 35 }, { wch: 50 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }
+            { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 35 }, { wch: 50 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 40 }
         ];
         wsToday['!cols'] = cols;
         wsAll['!cols'] = cols;
@@ -121,13 +121,13 @@ async function generateDailyReport() {
         XLSX.writeFile(workbook, filePath);
 
         // تحديث ملف الوقت
-        fs.writeFileSync(path.join(__dirname, 'last_update.txt'), `آخر تحديث ناجح للتقرير: ${new Date().toLocaleString('ar-EG')}`);
+        fs.writeFileSync(path.join(__dirname, 'last_update.txt'), `آخر تحديث ناجح للتقرير (Supabase): ${new Date().toLocaleString('ar-EG')}`);
 
-        console.log(`✅ تم تحديث ملف الإكسل: تقرير_المبيعات_اليومي.xlsx`);
+        console.log(`✅ تم تحديث ملف الإكسل بنجاح من Supabase`);
         console.log(`⭐ إجمالي الطلبات: ${stats.totalOrders} | مبيعات اليوم: ${stats.todayRevenue} ج.م`);
 
     } catch (error) {
-        console.error('❌ حدث خطأ أثناء التحديث:', error);
+        console.error('❌ حدث خطأ أثناء التحديث من Supabase:', error);
     }
 }
 
