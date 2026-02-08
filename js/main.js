@@ -103,25 +103,7 @@ function renderAuthUI(name) {
 }
 
 // Separate rendering from logic for reuse
-function renderAuthUI(name) {
-    const txt = document.getElementById('auth-text');
-    const cartLoggedOut = document.getElementById('cart-auth-logged-out');
-    const cartLoggedIn = document.getElementById('cart-auth-logged-in');
-    const cartUserName = document.getElementById('cart-user-name');
-
-    if (name) {
-        if (txt) txt.innerText = name;
-        if (cartLoggedOut) cartLoggedOut.style.display = 'none';
-        if (cartLoggedIn) {
-            cartLoggedIn.style.display = 'flex';
-            if (cartUserName) cartUserName.innerText = `أهلاً، ${name}`;
-        }
-    } else {
-        if (txt) txt.innerText = 'دخول';
-        if (cartLoggedOut) cartLoggedOut.style.display = 'block';
-        if (cartLoggedIn) cartLoggedIn.style.display = 'none';
-    }
-}
+// Duplicate renderAuthUI removed
 
 // DOM Elements
 let menContainer, cartBtn, closeCart, cartSidebar, cartOverlay, loader, navbar, sizeModal, closeModal, modalProductName, modalProductPrice, mobileMenuBtn, navLinks, themeToggle, subFiltersContainer;
@@ -135,8 +117,9 @@ const initAll = () => {
     setupEventListeners();
     updateCartUI();
     renderAll();
-    initSupabaseAuth(); // Start Auth
+    initSupabaseAuthSafe(); // Wrapper to prevent errors
 
+    // Safety Loader Hiding
     if (loader) {
         setTimeout(() => {
             loader.style.opacity = '0';
@@ -144,6 +127,13 @@ const initAll = () => {
         }, 2200);
     }
 };
+
+// Dummy function to prevent ReferenceError if called elsewhere
+function initSupabaseAuthSafe() {
+    try {
+        if (typeof initSupabaseAuth === 'function') initSupabaseAuth();
+    } catch (e) { console.warn("Auth init skipped", e); }
+}
 
 document.addEventListener('DOMContentLoaded', initAll);
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
