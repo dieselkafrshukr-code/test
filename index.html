@@ -424,6 +424,13 @@
 
         <script defer src="./js/products.js"></script>
         <script defer src="./js/main.js"></script>
+        <!-- Failsafe: Force hide loader if JS hangs -->
+        <script>
+            setTimeout(() => {
+                const l = document.getElementById('loader');
+                if (l) l.style.display = 'none';
+            }, 4000); // Max wait 4 seconds
+        </script>
 </body>
 
 </html>
