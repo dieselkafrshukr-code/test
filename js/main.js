@@ -1,12 +1,14 @@
+// 🚀 DIESEL SHOP MAIN LOGIC
+// Dependencies: config.js must be loaded first
 
-// 🚀 DIESEL SHOP - INVINCIBLE ENGINE (Supabase Edition)
+
+
+// Globals
 let cart = [];
 try {
     const saved = localStorage.getItem('diesel_cart');
     if (saved) cart = JSON.parse(saved);
-} catch (e) {
-    cart = [];
-}
+} catch (e) { cart = []; }
 
 let selectedProductForSize = null;
 let selectedColor = null;
@@ -16,40 +18,32 @@ let shippingCosts = {};
 const governorates = [
     "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
 ];
-
-// --- HYBRID CONFIGURATION ---
-// 1. Supabase (Database)
-const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
-let supabase = null;
-try {
-    if (window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch (e) { console.error("Supabase init failed:", e); }
-
-// 2. Firebase (Authentication only)
-const firebaseConfig = {
-    apiKey: "AIzaSyBFRqe3lhvzG0FoN0uAJlAP-VEz9bKLjUc",
-    authDomain: "mre23-4644a.firebaseapp.com",
-    projectId: "mre23-4644a",
-    storageBucket: "mre23-4644a.firebasestorage.app",
-    messagingSenderId: "179268769077",
-    appId: "1:179268769077:web:d9fb8cd25ad284ae0de87c",
-    measurementId: "G-D64MG9L66S"
+// DOM Elements
+let menContainer, cartBtn, closeCart, cartSidebar, cartOverlay, loader, navbar, sizeModal, closeModal, modalProductName, modalProductPrice, mobileMenuBtn, navLinks, themeToggle, subFiltersContainer;
+window.onerror = function (msg, url, line, col, error) {
+    console.error("Global Error:", msg, error);
+    // Force hide loader if critical error happens
+    const l = document.getElementById('loader');
+    if (l) l.style.display = 'none';
+    return false;
 };
 
-let currentUser = null;
+const initAll = () => {
+    if (window.initialized) return;
+    window.initialized = true;
+    console.log("🚀 Starting App...");
 
-// Initialize Firebase safely
-function initFirebase() {
-    if (typeof firebase !== 'undefined') {
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
+    try {
+        initElements();
+        initTheme();
+        setupEventListeners();
+        updateCartUI();
+        renderAll();
 
-            // Auth Listener
+        // Setup Auth Listener (Firebase)
+        if (typeof firebase !== 'undefined') {
             firebase.auth().onAuthStateChanged((user) => {
-                console.log("Auth state changed:", user ? "Logged In" : "Logged Out");
+                console.log("👤 Auth State:", user ? "Logged In" : "Guest");
                 if (user) {
                     currentUser = {
                         id: user.uid,
@@ -63,24 +57,27 @@ function initFirebase() {
                     updateAuthUI();
                 }
             });
-        } catch (e) {
-            console.error("Firebase init error:", e);
         }
-    } else {
-        console.warn("Firebase SDK not loaded");
+
+    } catch (e) {
+        console.error("🔥 CRITICAL INIT ERROR:", e);
+    } finally {
+        // Always hide loader
+        const l = document.getElementById('loader');
+        if (l) {
+            setTimeout(() => {
+                l.style.opacity = '0';
+                setTimeout(() => l.style.display = 'none', 500);
+            }, 1000);
+        }
     }
+};
+
+document.addEventListener('DOMContentLoaded', initAll);
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initAll();
 }
 
-// Call initFirebase after DOM load inside initAll or listener
-document.addEventListener('DOMContentLoaded', initFirebase);
-
-
-
-function handleAuthChange(session) {
-    // Deprecated for Client - using Firebase now
-}
-
-// Separate rendering from logic for reuse
 function renderAuthUI(name) {
     const txt = document.getElementById('auth-text');
     const cartLoggedOut = document.getElementById('cart-auth-logged-out');
@@ -109,60 +106,6 @@ function renderAuthUI(name) {
     }
 }
 
-// Separate rendering from logic for reuse
-// Duplicate renderAuthUI removed
-
-// DOM Elements
-let menContainer, cartBtn, closeCart, cartSidebar, cartOverlay, loader, navbar, sizeModal, closeModal, modalProductName, modalProductPrice, mobileMenuBtn, navLinks, themeToggle, subFiltersContainer;
-
-// Global Error Handler
-window.onerror = function (msg, url, line, col, error) {
-    console.error("Global Error:", msg, error);
-    // Force hide loader if critical error happens
-    const l = document.getElementById('loader');
-    if (l) l.style.display = 'none';
-    return false;
-};
-
-const initAll = () => {
-    console.log("Initializing App...");
-    if (window.initialized) return;
-    window.initialized = true;
-
-    try {
-        initElements();
-    } catch (e) { console.error("Error initializing elements:", e); }
-
-    try {
-        initTheme();
-    } catch (e) { console.error("Error initializing theme:", e); }
-
-    try {
-        setupEventListeners();
-    } catch (e) { console.error("Error setting up listeners:", e); }
-
-    try {
-        updateCartUI();
-    } catch (e) { console.error("Error updating cart UI:", e); }
-
-    try {
-        renderAll();
-    } catch (e) { console.error("Error rendering products:", e); }
-
-    // Try Hybrid Auth Init safely
-    try {
-        if (typeof initSupabaseAuthSafe === 'function') initSupabaseAuthSafe();
-    } catch (e) { console.warn("Supabase Auth init skipped", e); }
-
-    // Hide Loader finally
-    if (loader) {
-        setTimeout(() => {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
-        }, 1500);
-    }
-    console.log("App Initialized Successfully ✅");
-};
 
 // Dummy function to prevent ReferenceError if called elsewhere
 function initSupabaseAuthSafe() {
