@@ -715,27 +715,7 @@ function openCartSidebar() { cartSidebar.classList.add('open'); cartOverlay.clas
 function closeCartSidebar() { cartSidebar.classList.remove('open'); cartOverlay.classList.remove('show'); }
 function closeMobileMenu() { if (mobileMenuBtn) { mobileMenuBtn.classList.remove('active'); navLinks.classList.remove('active'); } }
 
-// --- Auth & Orders (Supabase) ---
-async function signInWithGoogle() {
-    if (!supabase) return alert("خدمة التسجيل غير متوفرة حالياً (Offline)");
-    try {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.href // Redirect back to here
-            }
-        });
-        if (error) throw error;
-    } catch (e) { console.error(e); alert("خطأ في الدخول"); }
-}
-
-async function signOutUser() {
-    if (supabase) await supabase.auth.signOut();
-    cart = [];
-    localStorage.removeItem('diesel_cart');
-    updateCartUI();
-    document.getElementById('my-orders-modal').classList.remove('active');
-}
+// Duplicate Supabase Auth functions removed to use Firebase Auth above
 
 function updateAuthUI() {
     const name = currentUser ? (currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name.split(' ')[0] : 'حسابي') : null;
