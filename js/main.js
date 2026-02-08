@@ -51,7 +51,8 @@ const initAll = () => {
                         user_metadata: { full_name: user.displayName || user.email }
                     };
                     updateAuthUI();
-                    loadCartFromSupabase();
+                    // Use window.supabase for safety
+                    if (window.supabase) loadCartFromSupabase();
                 } else {
                     currentUser = null;
                     updateAuthUI();
@@ -72,47 +73,6 @@ const initAll = () => {
         }
     }
 };
-
-document.addEventListener('DOMContentLoaded', initAll);
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initAll();
-}
-
-function renderAuthUI(name) {
-    const txt = document.getElementById('auth-text');
-    const cartLoggedOut = document.getElementById('cart-auth-logged-out');
-    const cartLoggedIn = document.getElementById('cart-auth-logged-in');
-    const cartUserName = document.getElementById('cart-user-name');
-    const myOrdersSection = document.getElementById('orders-list-section');
-    const myOrdersLogin = document.getElementById('orders-login-section');
-
-    const displayName = currentUser ? (currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name.split(' ')[0] : 'حسابي') : null;
-
-    if (currentUser) {
-        if (txt) txt.innerText = displayName;
-        if (cartLoggedOut) cartLoggedOut.style.display = 'none';
-        if (cartLoggedIn) {
-            cartLoggedIn.style.display = 'flex';
-            if (cartUserName) cartUserName.innerText = `أهلاً، ${displayName}`;
-        }
-        if (myOrdersSection) myOrdersSection.style.display = 'block';
-        if (myOrdersLogin) myOrdersLogin.style.display = 'none';
-    } else {
-        if (txt) txt.innerText = 'دخول';
-        if (cartLoggedOut) cartLoggedOut.style.display = 'block';
-        if (cartLoggedIn) cartLoggedIn.style.display = 'none';
-        if (myOrdersSection) myOrdersSection.style.display = 'none';
-        if (myOrdersLogin) myOrdersLogin.style.display = 'block';
-    }
-}
-
-
-// Dummy function to prevent ReferenceError if called elsewhere
-function initSupabaseAuthSafe() {
-    try {
-        if (typeof initSupabaseAuth === 'function') initSupabaseAuth();
-    } catch (e) { console.warn("Auth init skipped", e); }
-}
 
 document.addEventListener('DOMContentLoaded', initAll);
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -146,8 +106,8 @@ async function loadShippingData() {
     }
 
     try {
-        if (!supabase) return;
-        const { data, error } = await supabase.from('settings').select('costs').eq('id', 'shipping').single();
+        if (!window.supabase) return;
+        const { data, error } = await window.supabase.from('settings').select('costs').eq('id', 'shipping').single();
         if (data) shippingCosts = data.costs || {};
     } catch (e) { console.error("Error loading shipping costs", e); }
 }
@@ -181,6 +141,34 @@ const parentSubMap = {
     ],
     shoes: []
 };
+
+function renderAuthUI(name) {
+    const txt = document.getElementById('auth-text');
+    const cartLoggedOut = document.getElementById('cart-auth-logged-out');
+    const cartLoggedIn = document.getElementById('cart-auth-logged-in');
+    const cartUserName = document.getElementById('cart-user-name');
+    const myOrdersSection = document.getElementById('orders-list-section');
+    const myOrdersLogin = document.getElementById('orders-login-section');
+
+    const displayName = currentUser ? (currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name.split(' ')[0] : 'حسابي') : null;
+
+    if (currentUser) {
+        if (txt) txt.innerText = displayName;
+        if (cartLoggedOut) cartLoggedOut.style.display = 'none';
+        if (cartLoggedIn) {
+            cartLoggedIn.style.display = 'flex';
+            if (cartUserName) cartUserName.innerText = `أهلاً، ${displayName}`;
+        }
+        if (myOrdersSection) myOrdersSection.style.display = 'block';
+        if (myOrdersLogin) myOrdersLogin.style.display = 'none';
+    } else {
+        if (txt) txt.innerText = 'دخول';
+        if (cartLoggedOut) cartLoggedOut.style.display = 'block';
+        if (cartLoggedIn) cartLoggedIn.style.display = 'none';
+        if (myOrdersSection) myOrdersSection.style.display = 'none';
+        if (myOrdersLogin) myOrdersLogin.style.display = 'block';
+    }
+}
 
 function setupEventListeners() {
     // Navbar Scroll Effect
@@ -345,13 +333,13 @@ function setupEventListeners() {
             const submitBtn = document.getElementById('btn-login');
 
             errorEl.style.display = 'none';
-            if (!supabase) return alert("Offline Mode");
+            if (!window.supabase) return alert("Offline Mode");
 
             submitBtn.disabled = true;
             submitBtn.innerText = "...";
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await window.supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -384,11 +372,11 @@ function setupEventListeners() {
                 return;
             }
 
-            if (!supabase) return alert("Offline Mode");
+            if (!window.supabase) return alert("Offline Mode");
 
             btnSignup.innerText = "...";
             try {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await window.supabase.auth.signUp({
                     email: email,
                     password: password,
                     options: {
@@ -433,13 +421,13 @@ function setupEventListeners() {
 
 // --- Auth & Orders ---
 async function signInWithGoogle() {
-    if (!firebase || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
-        return alert("يرجى إعداد Firebase في ملف main.js أولاً");
+    // Check global firebase
+    if (!firebase) {
+        return alert("جاري تحميل خدمات جوجل، حاول مرة أخرى...");
     }
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
         await firebase.auth().signInWithPopup(provider);
-        // Auth state listener will handle the rest
     } catch (error) {
         console.error("Firebase Login Error", error);
         alert("خطأ في تسجيل الدخول: " + error.message);
@@ -467,8 +455,8 @@ function renderAll() {
 
     let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
 
-    if (supabase) {
-        supabase.from('products').select('*').then(({ data, error }) => {
+    if (window.supabase) {
+        window.supabase.from('products').select('*').then(({ data, error }) => {
             let fireProds = [];
             if (!error && data) {
                 fireProds = data;
@@ -666,6 +654,7 @@ function updateCartUI() {
     } else {
         list.innerHTML = cart.map(i => `
             <div class="cart-item">
+            
                 <img src="${i.image}" alt="${i.name}">
                 
                 <div class="cart-item-info">
@@ -732,12 +721,12 @@ window.openMyOrdersModal = () => {
 async function loadMyOrders() {
     const list = document.getElementById('my-orders-list');
     list.innerHTML = 'جاري التحميل...';
-    if (!supabase) {
+    if (!window.supabase) {
         list.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">غير متصل بالإنترنت</div>';
         return;
     }
     try {
-        const { data: orders, error } = await supabase.from('orders')
+        const { data: orders, error } = await window.supabase.from('orders')
             .select('*')
             .eq('userId', currentUser.id)
             .order('createdAt', { ascending: false });
@@ -747,7 +736,7 @@ async function loadMyOrders() {
         // If no orders by ID, try by email (legacy/guest support)
         let finalOrders = orders;
         if (!finalOrders || finalOrders.length === 0) {
-            const { data: emailOrders } = await supabase.from('orders')
+            const { data: emailOrders } = await window.supabase.from('orders')
                 .select('*')
                 .eq('userEmail', currentUser.email)
                 .order('createdAt', { ascending: false });
@@ -799,15 +788,15 @@ async function loadMyOrders() {
 
 async function saveCartToSupabase() {
     localStorage.setItem('diesel_cart', JSON.stringify(cart));
-    if (currentUser && supabase) {
+    if (currentUser && window.supabase) {
         // Upsert cart to Supabase
-        await supabase.from('user_carts').upsert({ userId: currentUser.id, items: cart, updatedAt: new Date() });
+        await window.supabase.from('user_carts').upsert({ userId: currentUser.id, items: cart, updatedAt: new Date() });
     }
 }
 
 async function loadCartFromSupabase() {
-    if (!currentUser || !supabase) return;
-    const { data } = await supabase.from('user_carts').select('items').eq('userId', currentUser.id).single();
+    if (!currentUser || !window.supabase) return;
+    const { data } = await window.supabase.from('user_carts').select('items').eq('userId', currentUser.id).single();
     if (data && data.items) {
         const remote = data.items;
         if (remote.length > 0) { cart = remote; updateCartUI(); }

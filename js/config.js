@@ -1,13 +1,11 @@
 // ⚙️ SYSTEM CONFIGURATION
 // This file initializes both Firebase (Auth) and Supabase (DB) centrally.
 
-// 1. Supabase Config (Database & Storage)
-const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
-let supabase = null;
+window.SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
+window.SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
+window.supabase = null;
 
-// 2. Firebase Config (Authentication)
-const firebaseConfig = {
+window.firebaseConfig = {
     apiKey: "AIzaSyBFRqe3lhvzG0FoN0uAJlAP-VEz9bKLjUc",
     authDomain: "mre23-4644a.firebaseapp.com",
     projectId: "mre23-4644a",
@@ -17,16 +15,16 @@ const firebaseConfig = {
     measurementId: "G-D64MG9L66S"
 };
 
-// --- Initialization Logic ---
 console.log("🚀 System Config Loading...");
 
 // Init Supabase
 try {
-    if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+        window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
         console.log("✅ Supabase Connected");
-    } else {
-        console.warn("⚠️ Supabase SDK not found");
+    } else if (window.supabase) {
+        // Fallback if loaded differently
+        window.supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
     }
 } catch (e) { console.error("❌ Supabase Init Error:", e); }
 
@@ -34,7 +32,7 @@ try {
 try {
     if (typeof firebase !== 'undefined') {
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp(window.firebaseConfig);
             console.log("✅ Firebase Initialized");
         }
     } else {
