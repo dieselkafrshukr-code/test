@@ -387,41 +387,43 @@
                 <h2 style="margin-bottom: 12px; font-weight: 900;">تتبع طلباتك</h2>
                 <p style="margin-bottom: 25px; opacity: 0.8; font-size: 0.95rem;">سجل دخول بحساب جوجل لمتابعة حالة
                     طلباتك</p>
-                <button id="google-login-btn" class="btn btn-primary"
-                    style="display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 25px; width: 100%; max-width: 280px; margin: 0 auto;">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px;">
-                    تسجيل الدخول بجوجل
-                </button>
-            </div>
-
-            <!-- Orders Section (shown when logged in) -->
-            <div id="orders-list-section" style="display: none; width: 100%;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="text-align: right;">
-                        <h2 style="margin: 0; font-size: 1.2rem;"><i class="fas fa-box"
-                                style="color: var(--primary);"></i> طلباتي</h2>
-                        <p id="user-email-display" style="font-size: 0.75rem; opacity: 0.6; margin: 3px 0 0;"></p>
-                    </div>
-                    <button id="logout-btn"
-                        style="background: #e20613; border: none; color: #fff; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
-                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                <div id="cart-auth-logged-out" style="text-align: center; margin-bottom: 20px;">
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 10px;">سجل دخولك لحفظ السلة ومتابعة
+                        الطلبات</p>
+                    <button id="google-login-btn" class="google-btn">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                        تسجيل الدخول بجوجل
                     </button>
                 </div>
 
-                <div id="my-orders-list">
-                    <div style="text-align: center; padding: 30px; opacity: 0.5;">جاري تحميل الطلبات...</div>
+                <!-- Orders Section (shown when logged in) -->
+                <div id="orders-list-section" style="display: none; width: 100%;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; font-size: 1.2rem;"><i class="fas fa-box"
+                                    style="color: var(--primary);"></i> طلباتي</h2>
+                            <p id="user-email-display" style="font-size: 0.75rem; opacity: 0.6; margin: 3px 0 0;"></p>
+                        </div>
+                        <button id="logout-btn"
+                            style="background: #e20613; border: none; color: #fff; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+                            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                        </button>
+                    </div>
+
+                    <div id="my-orders-list">
+                        <div style="text-align: center; padding: 30px; opacity: 0.5;">جاري تحميل الطلبات...</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
 
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <!-- Supabase SDK -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script defer src="./js/products.js"></script>
-    <script defer src="./js/main.js"></script>
+        <script defer src="./js/products.js"></script>
+        <script defer src="./js/main.js"></script>
 </body>
 
 </html>

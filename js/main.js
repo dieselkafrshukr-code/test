@@ -11,44 +11,94 @@ try {
 let selectedProductForSize = null;
 let selectedColor = null;
 let activeCategory = "all";
-let remoteProducts = []; 
+let remoteProducts = [];
 let shippingCosts = {};
 const governorates = [
     "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحر الأحمر", "البحيرة", "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا", "القليوبية", "الوادي الجديد", "السويس", "الشرقية", "دمياط", "بورسعيد", "جنوب سيناء", "كفر الشيخ", "مطروح", "الأقصر", "قنا", "شمال سيناء", "سوهاج", "بني سويف", "أسيوط", "أسوان"
 ];
 
-// Supabase Config
+// --- HYBRID CONFIGURATION ---
+// 1. Supabase (Database)
 const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+try {
+    if (window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) { console.error("Supabase init failed:", e); }
+
+// 2. Firebase (Authentication only)
+const firebaseConfig = {
+    apiKey: "AIzaSyBFRqe3lhvzG0FoN0uAJlAP-VEz9bKLjUc",
+    authDomain: "mre23-4644a.firebaseapp.com",
+    projectId: "mre23-4644a",
+    storageBucket: "mre23-4644a.firebasestorage.app",
+    messagingSenderId: "179268769077",
+    appId: "1:179268769077:web:d9fb8cd25ad284ae0de87c",
+    measurementId: "G-D64MG9L66S"
+};
 
 let currentUser = null;
 
-// Initialize & Auth Listener
-async function initSupabaseAuth() {
-    // Check current session
-    const { data: { session } } = await supabase.auth.getSession();
-    handleAuthChange(session);
+// Initialize Firebase if config is present
+if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
 
-    // Listen for changes
-    supabase.auth.onAuthStateChange((_event, session) => {
-        handleAuthChange(session);
+    // Auth Listener
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            // User is signed in.
+            currentUser = {
+                id: user.uid, // Firebase UID (Text)
+                email: user.email,
+                user_metadata: { full_name: user.displayName || user.email }
+            };
+
+            // UI Updates
+            updateAuthUI();
+
+            // Load Data from Supabase using Firebase UID
+            loadCartFromSupabase();
+        } else {
+            // User is signed out.
+            currentUser = null;
+            updateAuthUI();
+        }
     });
+} else {
+    // Fallback if Firebase not configured
+    console.warn("Firebase not configured. Setup firebaseConfig in main.js");
 }
 
 function handleAuthChange(session) {
-    if (session?.user) {
-        currentUser = session.user;
-        const name = currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name.split(' ')[0] : 'حسابي';
-        localStorage.setItem('diesel_user_cache', JSON.stringify({ name }));
-        updateAuthUI();
-        loadCartFromSupabase();
-    } else {
-        currentUser = null;
-        if (localStorage.getItem('diesel_user_cache')) {
-            localStorage.removeItem('diesel_user_cache');
+    // Deprecated for Client - using Firebase now
+}
+
+// Separate rendering from logic for reuse
+function renderAuthUI(name) {
+    const txt = document.getElementById('auth-text');
+    const cartLoggedOut = document.getElementById('cart-auth-logged-out');
+    const cartLoggedIn = document.getElementById('cart-auth-logged-in');
+    const cartUserName = document.getElementById('cart-user-name');
+    const myOrdersSection = document.getElementById('orders-list-section');
+    const myOrdersLogin = document.getElementById('orders-login-section');
+
+    const displayName = currentUser ? (currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name.split(' ')[0] : 'حسابي') : null;
+
+    if (currentUser) {
+        if (txt) txt.innerText = displayName;
+        if (cartLoggedOut) cartLoggedOut.style.display = 'none';
+        if (cartLoggedIn) {
+            cartLoggedIn.style.display = 'flex';
+            if (cartUserName) cartUserName.innerText = `أهلاً، ${displayName}`;
         }
-        updateAuthUI();
+        if (myOrdersSection) myOrdersSection.style.display = 'block';
+        if (myOrdersLogin) myOrdersLogin.style.display = 'none';
+    } else {
+        if (txt) txt.innerText = 'دخول';
+        if (cartLoggedOut) cartLoggedOut.style.display = 'block';
+        if (cartLoggedIn) cartLoggedIn.style.display = 'none';
+        if (myOrdersSection) myOrdersSection.style.display = 'none';
+        if (myOrdersLogin) myOrdersLogin.style.display = 'block';
     }
 }
 
@@ -127,6 +177,7 @@ async function loadShippingData() {
     }
 
     try {
+        if (!supabase) return;
         const { data, error } = await supabase.from('settings').select('costs').eq('id', 'shipping').single();
         if (data) shippingCosts = data.costs || {};
     } catch (e) { console.error("Error loading shipping costs", e); }
@@ -264,16 +315,20 @@ function setupEventListeners() {
                 status: "جديد",
                 paymentMethod: paymentMethod === 'cod' ? 'عند الاستلام' : 'أونلاين',
                 paymentStatus: "لم يتم الدفع",
+                // Use ID from whatever auth system is active (Supabase or Firebase)
                 userId: currentUser ? currentUser.id : null,
                 userEmail: currentUser ? currentUser.email : null
             };
 
             try {
                 // Save order to Supabase
-                const { data, error } = await supabase.from('orders').insert([orderData]).select();
-                
-                if (error) throw error;
-
+                // Check if Supabase client is available
+                if (supabase) {
+                    const { data, error } = await supabase.from('orders').insert([orderData]).select();
+                    if (error) throw error;
+                } else {
+                    console.warn("Supabase offline, order not saved to DB");
+                }
                 if (paymentMethod === 'online') {
                     alert("الدفع الأونلاين غير مفعل حالياً مع قاعدة البيانات الجديدة");
                     return;
@@ -298,9 +353,93 @@ function setupEventListeners() {
         };
     }
 
-    // Google Login & Logout Buttons
-    const gLogin = document.getElementById('google-login-btn');
-    if (gLogin) gLogin.onclick = signInWithGoogle;
+    // Auth Modal Logic
+    const openAuthBtn = document.getElementById('open-auth-btn');
+    const authModal = document.getElementById('auth-modal');
+    const closeAuthBtn = document.getElementById('close-auth-modal');
+    const authForm = document.getElementById('email-auth-form');
+    const btnSignup = document.getElementById('btn-signup');
+
+    if (openAuthBtn) openAuthBtn.onclick = () => {
+        closeCartSidebar();
+        authModal.classList.add('active');
+    };
+    if (closeAuthBtn) closeAuthBtn.onclick = () => authModal.classList.remove('active');
+
+    // Handle Login Submit
+    if (authForm) {
+        authForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorEl = document.getElementById('auth-error');
+            const submitBtn = document.getElementById('btn-login');
+
+            errorEl.style.display = 'none';
+            if (!supabase) return alert("Offline Mode");
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "...";
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                if (error) throw error;
+
+                authModal.classList.remove('active');
+                authForm.reset();
+            } catch (err) {
+                console.error(err);
+                errorEl.innerText = "بيانات الدخول غير صحيحة!";
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "دخول";
+            }
+        };
+    }
+
+    // Handle Signup Click
+    if (btnSignup) {
+        btnSignup.onclick = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorEl = document.getElementById('auth-error');
+
+            if (!email || !password || password.length < 6) {
+                errorEl.innerText = "أدخل بريد صحيح وكلمة مرور 6 أحرف على الأقل";
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (!supabase) return alert("Offline Mode");
+
+            btnSignup.innerText = "...";
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: { full_name: email.split('@')[0] } // Use part of email as name
+                    }
+                });
+                if (error) throw error;
+
+                alert("تم إنشاء الحساب بنجاح! تم تسجيل دخولك تلقائياً.");
+                authModal.classList.remove('active');
+                authForm.reset();
+            } catch (err) {
+                console.error(err);
+                errorEl.innerText = "حدث خطأ: " + err.message;
+                errorEl.style.display = 'block';
+            } finally {
+                btnSignup.innerText = "حساب جديد";
+            }
+        };
+    }
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) logoutBtn.onclick = signOutUser;
@@ -312,6 +451,35 @@ function setupEventListeners() {
     if (closeOrders) closeOrders.onclick = () => document.getElementById('my-orders-modal').classList.remove('active');
 }
 
+// --- Auth & Orders ---
+async function signInWithGoogle() {
+    if (!firebase || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+        return alert("يرجى إعداد Firebase في ملف main.js أولاً");
+    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        await firebase.auth().signInWithPopup(provider);
+        // Auth state listener will handle the rest
+    } catch (error) {
+        console.error("Firebase Login Error", error);
+        alert("خطأ في تسجيل الدخول: " + error.message);
+    }
+}
+
+async function signOutUser() {
+    if (firebase) {
+        await firebase.auth().signOut();
+        cart = []; // clear cart locally
+        updateCartUI();
+        document.getElementById('my-orders-modal').classList.remove('active');
+    }
+}
+
+// Remove the explicit Auth UI call from here as it's handled by observer
+function updateAuthUI() {
+    renderAuthUI();
+}
+
 // --- Product Logic ---
 function renderAll() {
     if (!menContainer) return;
@@ -319,13 +487,17 @@ function renderAll() {
 
     let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
 
-    supabase.from('products').select('*').then(({ data, error }) => {
-        let fireProds = [];
-        if (!error && data) {
-            fireProds = data;
-        }
-        combineAndRender(fireProds, localProds);
-    }).catch(() => combineAndRender([], localProds));
+    if (supabase) {
+        supabase.from('products').select('*').then(({ data, error }) => {
+            let fireProds = [];
+            if (!error && data) {
+                fireProds = data;
+            }
+            combineAndRender(fireProds, localProds);
+        }).catch(() => combineAndRender([], localProds));
+    } else {
+        combineAndRender([], localProds);
+    }
 }
 
 function combineAndRender(fireProds, localProds) {
@@ -555,6 +727,7 @@ function closeMobileMenu() { if (mobileMenuBtn) { mobileMenuBtn.classList.remove
 
 // --- Auth & Orders (Supabase) ---
 async function signInWithGoogle() {
+    if (!supabase) return alert("خدمة التسجيل غير متوفرة حالياً (Offline)");
     try {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -567,7 +740,7 @@ async function signInWithGoogle() {
 }
 
 async function signOutUser() {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     cart = [];
     localStorage.removeItem('diesel_cart');
     updateCartUI();
@@ -599,6 +772,10 @@ window.openMyOrdersModal = () => {
 async function loadMyOrders() {
     const list = document.getElementById('my-orders-list');
     list.innerHTML = 'جاري التحميل...';
+    if (!supabase) {
+        list.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">غير متصل بالإنترنت</div>';
+        return;
+    }
     try {
         const { data: orders, error } = await supabase.from('orders')
             .select('*')
@@ -628,7 +805,7 @@ async function loadMyOrders() {
             // Handle items being string (from existing code) or JSON
             let items = o.items;
             if (typeof items === 'string') {
-                try { items = JSON.parse(items); } catch(e) {}
+                try { items = JSON.parse(items); } catch (e) { }
             }
 
             return `
@@ -662,14 +839,14 @@ async function loadMyOrders() {
 
 async function saveCartToSupabase() {
     localStorage.setItem('diesel_cart', JSON.stringify(cart));
-    if (currentUser) {
+    if (currentUser && supabase) {
         // Upsert cart to Supabase
         await supabase.from('user_carts').upsert({ userId: currentUser.id, items: cart, updatedAt: new Date() });
     }
 }
 
 async function loadCartFromSupabase() {
-    if (!currentUser) return;
+    if (!currentUser || !supabase) return;
     const { data } = await supabase.from('user_carts').select('items').eq('userId', currentUser.id).single();
     if (data && data.items) {
         const remote = data.items;

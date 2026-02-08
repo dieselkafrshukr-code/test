@@ -2,7 +2,18 @@
 // 🚀 DIESEL ADMIN ENGINE - HYBRID VERSION (Supabase Edition)
 const SUPABASE_URL = 'https://ymdnfohikgjkvdmdrthe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J0JuDItWsSggSZPj0ATwYA_xXlGI92x';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+try {
+    if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } else {
+        console.warn("Supabase SDK failed to load. Admin panel offline.");
+        isSupabaseReady = false;
+    }
+} catch (e) {
+    console.error("Supabase init failed:", e);
+    isSupabaseReady = false;
+}
 
 let productsCol = null; // Legacy support (not used directly, Supabase client used instead)
 let isSupabaseReady = true;
@@ -15,6 +26,7 @@ const governorates = [
 
 // Initialize Supabase Auth Logic
 async function initAdminAuth() {
+    if (!supabase) return;
     // SECURITY: If we came from the home page button, force a logout to ask for credentials again
     if (sessionStorage.getItem('force_admin_login') === 'true') {
         sessionStorage.removeItem('force_admin_login');
@@ -146,24 +158,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Supabase Login
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: pass,
-                });
+                if (supabase) {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: pass,
+                    });
 
-                if (error) {
-                    // Fallback: If user doesn't exist in Supabase Auth yet (since we just migrated), 
-                    // we might need to create them or handle this differently.
-                    // For now, let's treat the password check above as the "Auth" for the legacy style,
-                    // but we still need a valid session to write to DB if RLS is on.
-                    // If you haven't created these users in Supabase Auth, sign up first.
-
-                    // Attempt auto-signup if failed (only for migration convenience, remove in prod!)
-                    // In real world, you create users in dashboard.
-                    console.warn("Login failed, attempting fallback or reporting error:", error);
-                    errEl.innerText = "فشل الدخول. تأكد من وجود المستخدم في Supabase Authentication";
-                    errEl.style.display = 'block';
-                    return;
+                    if (error) {
+                        console.warn("Login failed, attempting fallback or reporting error:", error);
+                        errEl.innerText = "فشل الدخول. تأكد من وجود المستخدم في Supabase Authentication";
+                        errEl.style.display = 'block';
+                        return;
+                    }
+                } else {
+                    // Offline bypass - risky but allows local editing
+                    console.warn("Offline Login Bypass");
                 }
 
                 localStorage.setItem('adminRole', role);
@@ -190,8 +199,10 @@ async function loadShippingCosts() {
     showLoader(true);
     let currentCosts = {};
     try {
-        const { data, error } = await supabase.from('settings').select('costs').eq('id', 'shipping').single();
-        if (data) currentCosts = data.costs || {};
+        if (supabase) {
+            const { data, error } = await supabase.from('settings').select('costs').eq('id', 'shipping').single();
+            if (data) currentCosts = data.costs || {};
+        }
     } catch (e) { console.error(e); }
 
     container.innerHTML = governorates.map(gov => `
@@ -215,8 +226,12 @@ async function saveShippingCosts() {
 
     showLoader(true);
     try {
-        const { error } = await supabase.from('settings').upsert({ id: 'shipping', costs: costs, updatedAt: new Date() });
-        if (error) throw error;
+        if (supabase) {
+            const { error } = await supabase.from('settings').upsert({ id: 'shipping', costs: costs, updatedAt: new Date() });
+            if (error) throw error;
+        } else {
+            alert("أنت غير متصل بالإنترنت، لن يتم حفظ التغييرات على السيرفر.");
+        }
         alert("تم حفظ تكاليف الشحن بنجاح! 🚚✅");
     } catch (e) {
         console.error("Save error:", e);
@@ -226,7 +241,7 @@ async function saveShippingCosts() {
 }
 
 function logout() {
-    supabase.auth.signOut();
+    if (supabase) supabase.auth.signOut();
     localStorage.removeItem('adminRole');
     adminRole = 'none';
 }
@@ -504,7 +519,7 @@ async function fetchProducts() {
     } catch (e) { console.error("Local error", e); }
 
     // 2. Load Remote Supabase
-    if (isSupabaseReady) {
+    if (isSupabaseReady && supabase) {
         try {
             const { data, error } = await supabase.from('products').select('*');
             if (data) {
@@ -731,7 +746,10 @@ function showLoader(show) { if (globalLoader) globalLoader.style.display = show 
 
 // Order functions
 async function loadOrders() {
-    if (!isSupabaseReady) return;
+    if (!isSupabaseReady || !supabase) {
+        document.getElementById('orders-list').innerHTML = "لا يوجد اتصال بالسيرفر";
+        return;
+    }
     if (adminRole !== 'all' && adminRole !== 'orders') return;
 
     const ordersList = document.getElementById('orders-list');
