@@ -431,27 +431,25 @@ function setupEventListeners() {
         };
     }
 
-}
+
+
+    // Google Login Handler
+    const gLogin = document.getElementById('google-login-btn');
+    if (gLogin) {
+        gLogin.onclick = (e) => {
+            e.preventDefault();
+            signInWithGoogle();
         };
     }
 
-// Google Login Handler
-const gLogin = document.getElementById('google-login-btn');
-if (gLogin) {
-    gLogin.onclick = (e) => {
-        e.preventDefault();
-        signInWithGoogle();
-    };
-}
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.onclick = signOutUser;
 
-const logoutBtn = document.getElementById('logout-btn');
-if (logoutBtn) logoutBtn.onclick = signOutUser;
+    const myOrdersBtn = document.getElementById('my-orders-btn');
+    if (myOrdersBtn) myOrdersBtn.onclick = (e) => { e.preventDefault(); openMyOrdersModal(); };
 
-const myOrdersBtn = document.getElementById('my-orders-btn');
-if (myOrdersBtn) myOrdersBtn.onclick = (e) => { e.preventDefault(); openMyOrdersModal(); };
-
-const closeOrders = document.getElementById('close-orders-modal');
-if (closeOrders) closeOrders.onclick = () => document.getElementById('my-orders-modal').classList.remove('active');
+    const closeOrders = document.getElementById('close-orders-modal');
+    if (closeOrders) closeOrders.onclick = () => document.getElementById('my-orders-modal').classList.remove('active');
 }
 
 // --- Auth & Orders ---
