@@ -39,35 +39,42 @@ const firebaseConfig = {
 
 let currentUser = null;
 
-// Initialize Firebase if config is present
-if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
+// Initialize Firebase safely
+function initFirebase() {
+    if (typeof firebase !== 'undefined') {
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
 
-    // Auth Listener
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            // User is signed in.
-            currentUser = {
-                id: user.uid, // Firebase UID (Text)
-                email: user.email,
-                user_metadata: { full_name: user.displayName || user.email }
-            };
-
-            // UI Updates
-            updateAuthUI();
-
-            // Load Data from Supabase using Firebase UID
-            loadCartFromSupabase();
-        } else {
-            // User is signed out.
-            currentUser = null;
-            updateAuthUI();
+            // Auth Listener
+            firebase.auth().onAuthStateChanged((user) => {
+                console.log("Auth state changed:", user ? "Logged In" : "Logged Out");
+                if (user) {
+                    currentUser = {
+                        id: user.uid,
+                        email: user.email,
+                        user_metadata: { full_name: user.displayName || user.email }
+                    };
+                    updateAuthUI();
+                    loadCartFromSupabase();
+                } else {
+                    currentUser = null;
+                    updateAuthUI();
+                }
+            });
+        } catch (e) {
+            console.error("Firebase init error:", e);
         }
-    });
-} else {
-    // Fallback if Firebase not configured
-    console.warn("Firebase not configured. Setup firebaseConfig in main.js");
+    } else {
+        console.warn("Firebase SDK not loaded");
+    }
 }
+
+// Call initFirebase after DOM load inside initAll or listener
+document.addEventListener('DOMContentLoaded', initFirebase);
+
+
 
 function handleAuthChange(session) {
     // Deprecated for Client - using Firebase now
@@ -108,24 +115,53 @@ function renderAuthUI(name) {
 // DOM Elements
 let menContainer, cartBtn, closeCart, cartSidebar, cartOverlay, loader, navbar, sizeModal, closeModal, modalProductName, modalProductPrice, mobileMenuBtn, navLinks, themeToggle, subFiltersContainer;
 
+// Global Error Handler
+window.onerror = function (msg, url, line, col, error) {
+    console.error("Global Error:", msg, error);
+    // Force hide loader if critical error happens
+    const l = document.getElementById('loader');
+    if (l) l.style.display = 'none';
+    return false;
+};
+
 const initAll = () => {
+    console.log("Initializing App...");
     if (window.initialized) return;
     window.initialized = true;
 
-    initElements();
-    initTheme();
-    setupEventListeners();
-    updateCartUI();
-    renderAll();
-    initSupabaseAuthSafe(); // Wrapper to prevent errors
+    try {
+        initElements();
+    } catch (e) { console.error("Error initializing elements:", e); }
 
-    // Safety Loader Hiding
+    try {
+        initTheme();
+    } catch (e) { console.error("Error initializing theme:", e); }
+
+    try {
+        setupEventListeners();
+    } catch (e) { console.error("Error setting up listeners:", e); }
+
+    try {
+        updateCartUI();
+    } catch (e) { console.error("Error updating cart UI:", e); }
+
+    try {
+        renderAll();
+    } catch (e) { console.error("Error rendering products:", e); }
+
+    // Try Hybrid Auth Init safely
+    try {
+        if (typeof initSupabaseAuthSafe === 'function') initSupabaseAuthSafe();
+    } catch (e) { console.warn("Supabase Auth init skipped", e); }
+
+    // Hide Loader finally
     if (loader) {
         setTimeout(() => {
             loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 800);
-        }, 2200);
+            setTimeout(() => loader.style.display = 'none', 500);
+        }, 1500);
     }
+    console.log("App Initialized Successfully ✅");
 };
 
 // Dummy function to prevent ReferenceError if called elsewhere
