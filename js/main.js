@@ -4,6 +4,7 @@
 
 
 // Globals
+const supabase = window.supabase; // Imported from config.js
 let cart = [];
 try {
     const saved = localStorage.getItem('diesel_cart');
